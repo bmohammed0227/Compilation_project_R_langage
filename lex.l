@@ -1,5 +1,6 @@
 %{
 	#include<stdio.h>
+  #include<string.h>
 	#include "syntax.tab.h"
 	extern YYSTYPE yylval;
 	int num_ligne=1;
@@ -7,11 +8,8 @@
 idf [A-Z]([a-z0-9]*)
 integer -?[0-9]([0-9]*)
 numeric ([0-9]+"."([0-9])*)|(-"("[0-9]+"."([0-9])*")")
-character '.'
-logical TRUE|FALSE
 cond_operator >|<|==|!=|>=|<=
 arit_operator "+"|-|"*"|"/"|%
-logic_operator and|or
 type_kw "INTEGER"|"NUMERIC"|"CHARACTER"
 comment "#"([^\n]*)
 %%
@@ -31,27 +29,43 @@ comment "#"([^\n]*)
       printf("erreur lexical : integer value is out of range\n");
 };
 {numeric} {
-  yylval.decimal = atof(yytext);
+  if(yytext[0] == '-') {
+    char temp[strlen(yytext)-2];
+    temp[0] = '-';
+    strncpy(temp+1, yytext+2, strlen(yytext)-3);
+    printf("%s\n",temp);
+    yylval.decimal = atof(temp);
+  }
+  else
+    yylval.decimal = atof(yytext);
   return numeric;
 };
-{character} {
+'.' {
   yylval.charactere = yytext[1];
   return character;
 };
-{logical} {
-  printf("logical : %s\n",yytext);
+"TRUE" {
+  yylval.entier = 1;
+  return logical;
+};
+"FALSE" {
+  yylval.entier = 0;
+  return logical;
 };
 {cond_operator} {
   printf("condition operator : %s\n",yytext);
 };
 {arit_operator} {
-  printf("arithmetic operator : %s\n",yytext);
+  yylval.charactere = yytext[0];
+  return operator;
 };
 "<-" {
-  return '=';
+  yylval.str = strdup(yytext);
+  return equal;
 };
-{logic_operator} {
-  printf("logical operator : %s\n",yytext);
+"and"|"or" {
+  yylval.str = strdup(yytext);
+  return and_or;
 };
 {type_kw} {
   yylval.str = strdup(yytext);
