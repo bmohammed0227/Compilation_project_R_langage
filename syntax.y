@@ -6,21 +6,26 @@
 	extern FILE *yyin;
 	extern int num_ligne;
 	int nbr_ligne = 1;
+  void yyerror(char* msg);
+  void updateIdfVal(char* idf, int val);
 %}
 %union{
 	int entier;
 	char* str;
 }
-%token idf
+%token <str> idf
+%token <entier> integer
+%start S
+%type <str> affectation
 %%
-S : idf SUITE {
-		printf("programme syntaxiquement correcte\n");
-		YYACCEPT;
-};
 
-SUITE : idf | ;
+S : affectation  {printf("S\n");}
+;
+
+affectation : idf '=' integer {updateIdfVal($1, $3);}
+;
 %%
-main(int argc, char** argv){
+int main(int argc, char** argv){
 	char nomFichier[20];
 	printf("Veuillez entrer le nom du fichier a compiler\n");
 	scanf("%s", nomFichier);
@@ -30,12 +35,16 @@ main(int argc, char** argv){
 		return -1;
 	}
 	yyin = file;
-	yyparse();
+	return yyparse();
 }
 
-yywrap(){
+void updateIdfVal(char* idf, int val) {
+  // mise a jour de la table des symboles
+  printf("updating %s = %d\n", idf, val);
+}
+int yywrap(){
 }
 
-yyerror(char* msg){
+void yyerror(char* msg){
 	printf("Erreur syntaxique\n");
 }
