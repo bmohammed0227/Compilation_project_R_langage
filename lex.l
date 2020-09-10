@@ -6,12 +6,13 @@
 %}
 idf [A-Z]([a-z0-9]*)
 integer -?[0-9]([0-9]*)
-numeric [0-9]+"."([0-9])*|-"("[0-9]+"."([0-9])*")"
+numeric ([0-9]+"."([0-9])*)|(-"("[0-9]+"."([0-9])*")")
 character '.'
 logical TRUE|FALSE
 cond_operator >|<|==|!=|>=|<=
 arit_operator "+"|-|"*"|"/"|%
 logic_operator and|or
+type_kw "INTEGER"|"NUMERIC"|"CHARACTER"
 comment "#"([^\n]*)
 %%
 {idf} {
@@ -30,10 +31,12 @@ comment "#"([^\n]*)
       printf("erreur lexical : integer value is out of range\n");
 };
 {numeric} {
-  printf("numeric : %s (%g)\n",yytext, atof(yytext));
+  yylval.decimal = atof(yytext);
+  return numeric;
 };
 {character} {
-  printf("character : %s (%c)\n",yytext, yytext[1]);
+  yylval.charactere = yytext[1];
+  return character;
 };
 {logical} {
   printf("logical : %s\n",yytext);
@@ -50,6 +53,10 @@ comment "#"([^\n]*)
 {logic_operator} {
   printf("logical operator : %s\n",yytext);
 };
+{type_kw} {
+  yylval.str = strdup(yytext);
+  return type;
+}
 "#"([^\n]*)
 [ \t]
 [\n] {
