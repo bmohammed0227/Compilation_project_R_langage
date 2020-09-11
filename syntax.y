@@ -1,25 +1,24 @@
 %{
 	#include <stdio.h>
-  #include <string.h>
+	#include <string.h>
 	char sauvType[20];
 	extern int yylex();
 	extern int yyparse();
 	extern FILE *yyin;
 	extern int num_ligne;
-	int nbr_ligne = 1;
-  void yyerror(char* msg);
-  void updateIdfInt(char *idf, int val);
-  void updateIdfFloat(char *idf, float val);
-  void updateIdfChar(char *idf, char val);
-  void updateIdfLogical(char *idf, int val);
-  int calculateInt(int a, int b, char operator);
-  float calculateFloat(float a, float b, char operator);
-  int calculateLogic(int a, int b, char* and_or);
-  %}
+	void yyerror(char* msg);
+	void updateIdfInt(char *idf, int val);
+	void updateIdfFloat(char *idf, float val);
+	void updateIdfChar(char *idf, char val);
+	void updateIdfLogical(char *idf, int val);
+	int calculateInt(int a, int b, char operator);
+	float calculateFloat(float a, float b, char operator);
+	int calculateLogic(int a, int b, char* and_or);
+%}
 %union{
 	int entier;
-  float decimal;
-  char charactere;
+	float decimal;
+	char charactere;
 	char* str;
 }
 %token type
@@ -31,21 +30,30 @@
 %token <str> equal;
 %token <charactere> operator
 %token <str> and_or
+%token <entier> taille
 %start S
-%type affectation
+%type <str> affectation
 %type <entier> operationInt
 %type <decimal> operationFloat
 %type <entier> operationLogic
 %%
 
-S : affectation  {;}
-| S affectation  {;}
+S : S affectation  {;}
+| S declaration {;}
+| {;}
 ;
 
-affectation : idf equal operationInt {updateIdfInt($1, $3);}
-| idf equal operationFloat {updateIdfFloat($1, $3);}
-| idf equal character { updateIdfChar($1, $3); }
-| idf equal operationLogic { updateIdfLogical($1, $3); }
+affectation : idf variableType equal operationInt {updateIdfInt($1, $4);}
+| idf variableType equal operationFloat {updateIdfFloat($1, $4);}
+| idf variableType equal character { updateIdfChar($1, $4); }
+| idf variableType equal operationLogic { updateIdfLogical($1, $4); }
+;
+
+declaration : type idf variableType {;}
+;
+
+variableType: taille
+|
 ;
 
 operationInt : operationInt operator integer { $$ = calculateInt($1, $3, $2); }
@@ -121,5 +129,5 @@ int yywrap(){
 }
 
 void yyerror(char* msg){
-	printf("Erreur syntaxique\n");
+	printf("Erreur syntaxique a la ligne %d\n", num_ligne);
 }

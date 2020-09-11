@@ -1,3 +1,5 @@
+INTEGER Idf20
+NUMERIC Tableau[20]
 Idf1 <- 2
 Idf12 <- 2 + 3 +4
 Idf13 <- TRUE and FALSE

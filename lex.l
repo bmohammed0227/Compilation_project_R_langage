@@ -1,6 +1,6 @@
 %{
 	#include<stdio.h>
-  #include<string.h>
+	#include<string.h>
 	#include "syntax.tab.h"
 	extern YYSTYPE yylval;
 	int num_ligne=1;
@@ -10,8 +10,9 @@ integer -?[0-9]([0-9]*)
 numeric ([0-9]+"."([0-9])*)|(-"("[0-9]+"."([0-9])*")")
 cond_operator >|<|==|!=|>=|<=
 arit_operator "+"|-|"*"|"/"|%
-type_kw "INTEGER"|"NUMERIC"|"CHARACTER"
+type_kw "INTEGER"|"NUMERIC"|"CHARACTER"|"LOGICAL"
 comment "#"([^\n]*)
+taille "["[1-9][0-9]*"]"
 %%
 {idf} {
   if(yyleng<=10){
@@ -70,7 +71,13 @@ comment "#"([^\n]*)
 {type_kw} {
   yylval.str = strdup(yytext);
   return type;
-}
+};
+{taille} {
+	char temp[strlen(yytext)-2];
+    strncpy(temp, yytext+1, strlen(yytext)-2);
+	yylval.entier = atoi(temp);
+	return taille;
+};
 "#"([^\n]*)
 [ \t]
 [\n] {
