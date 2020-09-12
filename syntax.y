@@ -22,20 +22,21 @@
 	char* str;
 }
 %token type
+%token par_ouvr
+%token par_ferm
+%token virgule
 %token <str> idf
 %token <entier> integer
 %token <decimal> numeric
 %token <charactere> character
 %token <entier> logical
 %token <str> equal;
-%token <charactere> operator
+%token <charactere> arit_operator
+%token <charactere> cond_operator
 %token <str> and_or
 %token <entier> taille
 %start S
 %type <str> affectation
-%type <entier> operationInt
-%type <decimal> operationFloat
-%type <entier> operationLogic
 %%
 
 S : S affectation  {;}
@@ -43,28 +44,45 @@ S : S affectation  {;}
 | {;}
 ;
 
-affectation : idf variableType equal operationInt {updateIdfInt($1, $4);}
-| idf variableType equal operationFloat {updateIdfFloat($1, $4);}
-| idf variableType equal character { updateIdfChar($1, $4); }
-| idf variableType equal operationLogic { updateIdfLogical($1, $4); }
+affectation : idf variableType equal operation_arithmetique_logique {}
+| type idf variableType equal operation_arithmetique_logique {}
 ;
 
-declaration : type idf variableType {;}
+declaration : type list_idf  
+;
+
+list_idf : idf variableType 
+| idf variableType virgule list_idf 
 ;
 
 variableType: taille
 |
 ;
 
-operationInt : operationInt operator integer { $$ = calculateInt($1, $3, $2); }
-| integer {;}
+operation_arithmetique_logique : operation_arithmetique 
+| operation_logique 
 ;
-operationFloat : operationFloat operator numeric { $$ = calculateFloat($1, $3, $2); }
-| numeric { ; }
+
+operation_arithmetique: expression_A  
+|	expression_A arit_operator operation_arithmetique 
 ;
-operationLogic : operationLogic and_or logical { $$ = calculateLogic($1, $3, $2);
-}
-| logical { ; };
+
+expression_A : integer
+| numeric
+| character
+| par_ouvr operation_arithmetique par_ferm
+;
+
+operation_comparaison : par_ouvr operation_arithmetique cond_operator operation_comparaison par_ferm
+| par_ouvr logical par_ferm
+| par_ouvr operation_arithmetique cond_operator  operation_arithmetique par_ferm
+;
+
+operation_logique:  operation_comparaison and_or  operation_logique
+|	operation_comparaison and_or operation_comparaison
+;
+
+
 %%
 void updateIdfInt(char *idf, int val) {
   // mise a jour de la table des symboles

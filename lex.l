@@ -6,8 +6,8 @@
 	int num_ligne=1;
 %}
 idf [A-Z]([a-z0-9]*)
-integer -?[0-9]([0-9]*)
-numeric ([0-9]+"."([0-9])*)|(-"("[0-9]+"."([0-9])*")")
+integer ([0-9]+)|("("-[0-9]+")")
+numeric ([0-9]+"."([0-9])*)|("("-[0-9]+"."([0-9])*")")
 cond_operator >|<|==|!=|>=|<=
 arit_operator "+"|-|"*"|"/"|%
 type_kw "INTEGER"|"NUMERIC"|"CHARACTER"|"LOGICAL"
@@ -24,17 +24,22 @@ taille "["[1-9][0-9]*"]"
 };
 {integer} {
   if(atoi(yytext) >= -32768 && atoi(yytext) <= 32767) {
+    if(strlen(yytext)>1 && yytext[1] == '-') {
+		char temp[strlen(yytext)-2];
+		strncpy(temp, yytext+1, strlen(yytext)-2);
+		yylval.entier = atoi(temp);
+  }
+  else
     yylval.entier = atoi(yytext);
-    return integer;
+  return integer;
   } else
       printf("erreur lexical : integer value is out of range\n");
 };
 {numeric} {
-  if(yytext[0] == '-') {
+  if(strlen(yytext)>1 && yytext[1] == '-') {
     char temp[strlen(yytext)-2];
     temp[0] = '-';
-    strncpy(temp+1, yytext+2, strlen(yytext)-3);
-    printf("%s\n",temp);
+    strncpy(temp, yytext+1, strlen(yytext)-2);
     yylval.decimal = atof(temp);
   }
   else
@@ -54,11 +59,11 @@ taille "["[1-9][0-9]*"]"
   return logical;
 };
 {cond_operator} {
-  printf("condition operator : %s\n",yytext);
+  return cond_operator;
 };
 {arit_operator} {
   yylval.charactere = yytext[0];
-  return operator;
+  return arit_operator;
 };
 "<-" {
   yylval.str = strdup(yytext);
@@ -78,6 +83,9 @@ taille "["[1-9][0-9]*"]"
 	yylval.entier = atoi(temp);
 	return taille;
 };
+[(] return par_ouvr;
+[)] return par_ferm;
+"," return virgule;
 "#"([^\n]*)
 [ \t]
 [\n] {

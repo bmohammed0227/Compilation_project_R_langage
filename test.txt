@@ -1,9 +1,10 @@
 INTEGER Idf20
+INTEGER Idf21 <- 2*8-((-1)*2+1)
+INTEGER Idf22, Idf23
 NUMERIC Tableau[20]
-Idf1 <- 2
-Idf12 <- 2 + 3 +4
-Idf13 <- TRUE and FALSE
-Idf2 <- 2. + 0.1
+Idf1 <- 0
+Idf12 <- 2+6-(-3)
+Idf13 <- (TRUE) or (FALSE) and (TRUE) 
+Idf13 <- (1<2) or (FALSE) and (TRUE) 
+Idf2 <- 2. + 0.1 - 0.
 Idf3 <- 's'
-Idf4 <- TRUE
-Idf5 <- -(1.2)
