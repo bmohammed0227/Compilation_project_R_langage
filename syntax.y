@@ -1,29 +1,43 @@
 %{
 	#include <stdio.h>
+  #include <stdlib.h>
 	#include <string.h>
-	char sauvType[20];
-	extern int yylex();
-	extern int yyparse();
+  #include "symbol_table.h"
+  char sauvType[20];
+  extern int yylex();
+  extern int yyparse();
+  extern void printList();
 	extern FILE *yyin;
 	extern int num_ligne;
-	void yyerror(char* msg);
-	void updateIdfInt(char *idf, int val);
-	void updateIdfFloat(char *idf, float val);
-	void updateIdfChar(char *idf, char val);
-	void updateIdfLogical(char *idf, int val);
-	int calculateInt(int a, int b, char operator);
-	float calculateFloat(float a, float b, char operator);
-	int calculateLogic(int a, int b, char* and_or);
-%}
+  extern Symbol* symbolsTable[26];
+  extern Symbol *find(char *idf);
+  extern void insert(char *idf, char *code);
+  extern char typeOf(char *val);
+  extern char tempType;
+  void yyerror(char *msg);
+  void updateEntityVal(char* idf, char* val);
+  void updateEntityType(char* idf, char type);
+  void updateEntitySize(char *idf, int size);
+  // void updateIdfInt(char *idf, int val);
+  // void updateIdfFloat(char *idf, float val);
+  // void updateIdfChar(char *idf, char val);
+  // void updateIdfLogical(char *idf, int val);
+  char* calculate(char* result, char* idf1, char* idf2, char* operand);
+  int calculateInt(int a, int b, char operator);
+  float calculateFloat(float a, float b, char operator);
+  int calculateLogic(char* a, char* b, char *and_or);
+  void setTempType(char* type);
+  void initTempType();
+  %}
 %union{
 	int entier;
 	float decimal;
 	char charactere;
 	char* str;
 }
-%token type
-%token par_ouvr
-%token par_ferm
+%token <str> type
+%token <str> par_ouvr
+%token <str> par_ferm
 %token virgule
 %token <str> idf
 %token <entier> integer
@@ -37,6 +51,12 @@
 %token <entier> taille
 %start S
 %type <str> affectation
+%type <str> operation_arithmetique_logique
+%type <str> operation_arithmetique
+%type <str> operation_logique
+%type <str> operation_comparaison
+%type <entier> variableType
+%type <str> expression_A
 %%
 
 S : S affectation  {;}
@@ -48,15 +68,15 @@ affectation : idf variableType equal operation_arithmetique_logique {}
 | type idf variableType equal operation_arithmetique_logique {}
 ;
 
-declaration : type list_idf  
+declaration : type list_idf
 ;
 
-list_idf : idf variableType 
-| idf variableType virgule list_idf 
+list_idf : idf variableType {updateEntitySize($1, $2);}
+| idf variableType virgule list_idf {updateEntitySize($1, $2);}
 ;
 
-variableType: taille
-|
+variableType: taille {$$ = $1;}
+| {$$ = 0;}
 ;
 
 operation_arithmetique_logique : operation_arithmetique 
@@ -84,24 +104,79 @@ operation_logique:  operation_comparaison and_or  operation_logique
 
 
 %%
-void updateIdfInt(char *idf, int val) {
-  // mise a jour de la table des symboles
-  printf("updating %s = %d\n", idf, val);
+void updateEntityVal(char* idf, char* val) {
+  char typeVal;
+  Symbol *var = find(idf);
+  if (var == NULL) {
+    insert(idf, val);
+    var->entityType = typeOf(val);
+  }
+  else {
+    if (typeOf(val) == var->entityType)
+      strcpy(var->entityCode, val);
+    else
+      yyerror("Type de variable incompatible avec la valeur\n");
+  }
 }
-void updateIdfFloat(char *idf, float val) {
-  // mise a jour de la table des symboles
-  printf("updating %s = %f\n", idf, val);
+void updateEntityType(char *idf, char type) {
+  printf("updating %s with type %c\n",idf, type);
+  Symbol *var = find(idf);
+  if (var == NULL) {
+    printf("Idf %s not found\n",idf);
+  } else {
+    if (var->entityType == ' ')
+      var->entityType = type;
+    else
+      yyerror("La variable a deja un type attribuee.\n");
+  }
 }
-void updateIdfChar(char *idf, char val) {
-  // mise a jour de la table des symboles
-  printf("updating %s = %c\n", idf, val);
+void updateEntitySize(char *idf, int size) {
+  if (size == 0)
+    return;
+  printf("updating %s with taille %d\n", idf, size);
+  Symbol *var = find(idf);
+  if (var == NULL) {
+    printf("Idf %s not found\n", idf);
+  } else {
+    if (var->arraySize == 0)
+      var->arraySize = size;
+    else
+      yyerror("Le tableau a deja une taille attribuee.\n");
+  }
 }
-void updateIdfLogical(char *idf, int val) {
-  // mise a jour de la table des symboles
-  char *boolean = "TRUE";
-  if (val == 0)
-    boolean = "FALSE";
-  printf("updating %s = %s\n", idf, boolean);
+char* calculate(char* resultChar, char* idf1, char* idf2, char* op) {
+  Symbol *var1 = find(idf1);
+  Symbol *var2 = find(idf2);
+  if (var1 == NULL || var2 == NULL)
+    return NULL;
+  if(var1->entityType == var2->entityType) {
+    if (var1->entityType == 'i') {
+      int result, val1, val2;
+      val1 = atoi(var1->entityCode);
+      val2 = atoi(var2->entityCode);
+      result = calculateInt(val1, val2, op[0]);
+      snprintf(resultChar, 20, "%d", result);
+    }
+    else if (var1->entityType == 'n') {
+      float result, val1, val2;
+      val1 = atof(var1->entityCode);
+      val2 = atof(var2->entityCode);
+      result = calculateFloat(val1, val2, op[0]);
+      snprintf(resultChar, 20, "%f", result);
+    }
+    else if (var1->entityType == 'l') {
+      int result;
+      result = calculateLogic(var1->entityCode, var2->entityCode, op);
+      if (result == 1)
+        strcpy(resultChar, "TRUE");
+      else
+        strcpy(resultChar, "FALSE");
+    }
+    return resultChar;
+  }
+
+  //   NEED TO IMPLEMENT FLOAT INT OPERATIONS
+  printf("Types differents\n");
 }
 int calculateInt(int a, int b, char operator) {
   if(operator == '+')
@@ -125,10 +200,25 @@ float calculateFloat(float a, float b, char operator) {
   else if (operator== '/')
     return a / b;
 }
-int calculateLogic(int a, int b, char* and_or) {
+int calculateLogic(char* a, char* b, char* and_or) {
+  int val1, val2;
+  if(strcpy(a, "TRUE") == 0)
+    val1 = 1;
+  else
+    val1 = 0;
+  if (strcpy(b, "TRUE") == 0)
+    val1 = 1;
+  else
+    val1 = 0;
   if (and_or[0] == 'a')
-    return a && b;
-  return a || b;
+    return val1 && val2;
+  return val1 || val2;
+}
+void setTempType(char* type) {
+  tempType = type[0] + 26;
+}
+void initTempType() {
+  tempType = ' ';
 }
 int main(int argc, char** argv){
 	char nomFichier[20];
@@ -140,7 +230,9 @@ int main(int argc, char** argv){
 		return -1;
 	}
 	yyin = file;
-	return yyparse();
+  yyparse();
+  printList();
+	return 0;
 }
 
 int yywrap(){
@@ -148,4 +240,5 @@ int yywrap(){
 
 void yyerror(char* msg){
 	printf("Erreur syntaxique a la ligne %d\n", num_ligne);
+  printf("%s\n", msg);
 }

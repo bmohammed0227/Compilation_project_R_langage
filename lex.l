@@ -2,8 +2,15 @@
 	#include<stdio.h>
 	#include<string.h>
 	#include "syntax.tab.h"
-	extern YYSTYPE yylval;
+  #include "symbol_table.h"
+  extern YYSTYPE yylval;
+  void insert(char* idf, char* code);
+  void printList();
+  int indexOfChar(char alphabet);
 	int num_ligne=1;
+  Symbol* symbolsTable[26];
+  Symbol* find(char *idf);
+  char tempType = ' ';
 %}
 idf [A-Z]([a-z0-9]*)
 integer ([0-9]+)|("("-[0-9]+")")
@@ -17,7 +24,7 @@ taille "["[1-9][0-9]*"]"
 {idf} {
   if(yyleng<=10){
     yylval.str=strdup(yytext);
-    //inserer(yytext,"idf");
+    insert(yytext, "");
     return idf;
   } else
       printf("erreur lexical : idf trop long\n");
@@ -75,6 +82,7 @@ taille "["[1-9][0-9]*"]"
 };
 {type_kw} {
   yylval.str = strdup(yytext);
+  // tempType = yytext[0] +32;
   return type;
 };
 {taille} {
@@ -89,9 +97,141 @@ taille "["[1-9][0-9]*"]"
 "#"([^\n]*)
 [ \t]
 [\n] {
+  // tempType = ' ';
 	num_ligne++;
 };
 . {
 	printf("erreur lexical a la ligne %d\n", num_ligne);
 	exit(0);
 };
+%%
+
+//display the list
+void printList() {
+  int i;
+  printf("\n/***************Table des symboles ******************/\n");
+  printf("_____________________________________________________________\n");
+  printf("\t| NomEntite |  CodeEntite \t |  TypeEntite \t |  TailleTab\n");
+  printf("_____________________________________________________________\n");
+  for(i=0; i<26; i++) {
+    Symbol *var = symbolsTable[i];
+
+    while (var != NULL) {
+      printf("\t|%10s |%12s  |%14c | %12d\n", var->entityName, var->entityCode,
+             var->entityType, var->arraySize);
+      var = var ->next;
+    }
+  }
+}
+
+//insert link at the first location
+void insert(char idf[], char code[]) {
+  if (find(idf) != NULL)
+    return;
+  // create a link
+  Symbol *newVar = (Symbol *)malloc(sizeof(Symbol));
+
+  strcpy(newVar->entityName, idf);
+  strcpy(newVar->entityCode, code);
+  newVar->entityType = ' ';
+  newVar->arraySize = 0;
+
+  // point it to old first node
+  newVar->next = symbolsTable[indexOfChar(idf[0])];
+
+  // point first to new first node
+  symbolsTable[indexOfChar(idf[0])] = newVar;
+  // printList();
+}
+
+//find a link with given key
+Symbol* find(char* idf) {
+  // start from the first link
+  Symbol *current = symbolsTable[indexOfChar(idf[0])];
+
+  // if list is empty
+  if (symbolsTable[indexOfChar(idf[0])] == NULL) {
+    return NULL;
+  }
+
+  // navigate through list
+  while (strcmp(current->entityName, idf) != 0) {
+
+    // if it is last node
+    if (current->next == NULL) {
+      return NULL;
+    } else {
+      // go to next link
+      current = current->next;
+    }
+  }
+
+  // if data found, return the current Link
+  return current;
+}
+
+char getType(char* idf) {
+  Symbol* var = find(idf);
+  if(var != NULL) {
+    return var->entityType;
+  }
+  return ' ';
+}
+
+void setType(char idf[], char type) {
+  Symbol* var = find(idf);
+  if(var != NULL) {
+    var->entityType = type;
+  }
+}
+
+int hasType(char* idf) {
+  if(getType(idf) != ' ')
+    return 1; // True
+  return 0; // False
+}
+
+char typeOf(char* val) {
+  int size = strlen(val);
+  int i;
+  if (strcmp(val, "TRUE") || strcmp(val, "FALSE"))
+    return 'l'; //logical
+  if (val[0] >= 'A' && val[0] <= 'z')
+    return 'c'; //character
+  for (i = 1; i < size; i++) {
+    if (val[i] == '.')
+      return 'n'; //numeric
+  }
+  return 'i'; //integer
+}
+
+int isCompatible(char* idf1, char* idf2) {
+  char type1 = typeOf(idf1);
+  char type2 = typeOf(idf2);
+
+  if(type1 == type2)
+    return 1;
+  else if (type1 == 'n' && type2 == 'i' || type1 == 'i' && type2 == 'n')
+    return 2;
+  return 0;
+}
+
+int getArraySize(char* idf) {
+  Symbol* var = find(idf);
+  if(var != NULL)
+    return var->arraySize;
+  return -1;
+}
+
+int setArraySize(char* idf, int size) {
+  Symbol *var = find(idf);
+  if (var != NULL) {
+    var->arraySize = size;
+    return 0;
+  }
+  return -1;
+}
+
+int indexOfChar(char alphabet) {
+  return (int)(alphabet - 'A');
+}
