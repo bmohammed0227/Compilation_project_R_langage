@@ -11,6 +11,7 @@
   Symbol* symbolsTable[26];
   Symbol* find(char *idf);
   char tempType = ' ';
+  char tempType2 = ' ';
 %}
 idf [A-Z]([a-z0-9]*)
 integer ([0-9]+)|("("-[0-9]+")")
@@ -82,7 +83,7 @@ taille "["[1-9][0-9]*"]"
 };
 {type_kw} {
   yylval.str = strdup(yytext);
-  // tempType = yytext[0] +32;
+  tempType2 = yytext[0] +32;
   return type;
 };
 {taille} {
@@ -97,7 +98,8 @@ taille "["[1-9][0-9]*"]"
 "#"([^\n]*)
 [ \t]
 [\n] {
-  // tempType = ' ';
+  tempType = tempType2;
+  tempType2 = ' ';
 	num_ligne++;
 };
 . {

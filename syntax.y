@@ -26,8 +26,6 @@
   int calculateInt(int a, int b, char operator);
   float calculateFloat(float a, float b, char operator);
   int calculateLogic(char* a, char* b, char *and_or);
-  void setTempType(char* type);
-  void initTempType();
   %}
 %union{
 	int entier;
@@ -71,9 +69,13 @@ affectation : idf variableType equal operation_arithmetique_logique {}
 declaration : type list_idf
 ;
 
-list_idf : idf variableType {updateEntitySize($1, $2);}
-| idf variableType virgule list_idf {updateEntitySize($1, $2);}
-;
+list_idf : idf variableType {
+  updateEntityType($1, tempType);
+  updateEntitySize($1, $2);}
+| idf variableType virgule list_idf {
+  updateEntityType($1, tempType);
+  updateEntitySize($1, $2);
+};
 
 variableType: taille {$$ = $1;}
 | {$$ = 0;}
@@ -119,7 +121,6 @@ void updateEntityVal(char* idf, char* val) {
   }
 }
 void updateEntityType(char *idf, char type) {
-  printf("updating %s with type %c\n",idf, type);
   Symbol *var = find(idf);
   if (var == NULL) {
     printf("Idf %s not found\n",idf);
@@ -133,7 +134,6 @@ void updateEntityType(char *idf, char type) {
 void updateEntitySize(char *idf, int size) {
   if (size == 0)
     return;
-  printf("updating %s with taille %d\n", idf, size);
   Symbol *var = find(idf);
   if (var == NULL) {
     printf("Idf %s not found\n", idf);
@@ -213,12 +213,6 @@ int calculateLogic(char* a, char* b, char* and_or) {
   if (and_or[0] == 'a')
     return val1 && val2;
   return val1 || val2;
-}
-void setTempType(char* type) {
-  tempType = type[0] + 26;
-}
-void initTempType() {
-  tempType = ' ';
 }
 int main(int argc, char** argv){
 	char nomFichier[20];
