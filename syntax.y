@@ -93,7 +93,7 @@ operation_arithmetique: expression_A
 
 expression_A : integer {snprintf($$, 20, "%d", $1);}
 | numeric { snprintf($$, 20, "%f", $1); }
-| character { $$[0] = $1; }
+| character { $$[0] = $1; $$[1] = '\0'; }
 | par_ouvr operation_arithmetique par_ferm
 ;
 
