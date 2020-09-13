@@ -18,15 +18,12 @@
   void updateEntityVal(char* idf, char* val);
   void updateEntityType(char* idf, char type);
   void updateEntitySize(char *idf, int size);
-  // void updateIdfInt(char *idf, int val);
-  // void updateIdfFloat(char *idf, float val);
-  // void updateIdfChar(char *idf, char val);
-  // void updateIdfLogical(char *idf, int val);
-  char* calculate(char* result, char* idf1, char* idf2, char* operand);
+  void calculate(char* resultChar, char* idf1, char* idf2, char op);
   int calculateInt(int a, int b, char operator);
   float calculateFloat(float a, float b, char operator);
-  int calculateLogic(char* a, char* b, char *and_or);
-  %}
+  int calculateLogic(int a, int b, char *and_or);
+  int calculateCond(char *a, char *b, char *op);
+%}
 %union{
 	int entier;
 	float decimal;
@@ -44,15 +41,15 @@
 %token <entier> logical
 %token <str> equal;
 %token <charactere> arit_operator
-%token <charactere> cond_operator
+%token <str> cond_operator
 %token <str> and_or
 %token <entier> taille
 %start S
 %type <str> affectation
 %type <str> operation_arithmetique_logique
 %type <str> operation_arithmetique
-%type <str> operation_logique
-%type <str> operation_comparaison
+%type <entier> operation_logique
+%type <entier> operation_comparaison
 %type <entier> variableType
 %type <str> expression_A
 %%
@@ -83,33 +80,35 @@ variableType: taille {$$ = $1;}
 | {$$ = 0;}
 ;
 
-operation_arithmetique_logique : operation_arithmetique 
-| operation_logique 
+operation_arithmetique_logique : operation_arithmetique {strcpy($$, $1);}
+| operation_logique {
+  if ($1 == 1)
+    strcpy($$, "TRUE");
+  else
+    strcpy($$, "FALSE");
+ }
 ;
 
-operation_arithmetique: expression_A  
-|	expression_A arit_operator operation_arithmetique 
+operation_arithmetique: expression_A {strcpy($$, $1);}
+|	expression_A arit_operator operation_arithmetique {calculate($$, $1, $3, $2);}
+| par_ouvr operation_arithmetique par_ferm {strcpy($$, $2);}
 ;
 
 expression_A : integer {snprintf($$, 20, "%d", $1);}
 | numeric { snprintf($$, 20, "%f", $1); }
 | character { $$[0] = $1; $$[1] = '\0'; }
-| par_ouvr operation_arithmetique par_ferm
+// | par_ouvr expression_A par_ferm {strcpy($$, $2);}
 ;
 
-operation_comparaison : par_ouvr operation_arithmetique cond_operator operation_comparaison par_ferm
-| par_ouvr logical par_ferm {
-  if($2 == 1)
-    strcpy($$, "TRUE");
- else
-   strcpy($$, "FALSE");
-}
-| par_ouvr operation_arithmetique cond_operator operation_arithmetique par_ferm;
+operation_comparaison : par_ouvr operation_arithmetique cond_operator operation_arithmetique par_ferm {
+  $$ = calculateCond($2, $4, $3);
+ };
 
-operation_logique:  operation_comparaison and_or  operation_logique {calculate($$, $1, $3, $2);}
-|	operation_comparaison and_or operation_comparaison {calculate($$, $1, $3, $2);}
+operation_logique:  operation_comparaison and_or  operation_logique {$$ = calculateLogic($1, $3, $2);}
+|	operation_comparaison {$$ = $1;}
+| logical and_or operation_logique { $$ = calculateLogic($1, $3, $2); }
+| logical { $$ = $1; }
 ;
-
 
 %%
 void updateEntityVal(char* idf, char* val) {
@@ -155,39 +154,52 @@ void updateEntitySize(char *idf, int size) {
       yyerror("Le tableau a deja une taille attribuee.\n");
   }
 }
-char* calculate(char* resultChar, char* idf1, char* idf2, char* op) {
-  Symbol *var1 = find(idf1);
-  Symbol *var2 = find(idf2);
-  if (var1 == NULL || var2 == NULL)
-    return NULL;
-  if(var1->entityType == var2->entityType) {
-    if (var1->entityType == 'i') {
-      int result, val1, val2;
-      val1 = atoi(var1->entityCode);
-      val2 = atoi(var2->entityCode);
-      result = calculateInt(val1, val2, op[0]);
-      snprintf(resultChar, 20, "%d", result);
+void calculate(char* resultChar, char* a, char* b, char op) {
+  float val1, val2;
+  char type1, type2;
+  if(a[0] >= 'A' && a[0] <= 'Z') {
+    Symbol *var1 = find(a);
+    val1 = (float) atof(a);
+    type1 = var1->entityType;
+  }
+  else {
+    if (typeOf(a) == 'n') {
+      val1 = atof(a);
+      type1 = 'n';
     }
-    else if (var1->entityType == 'n') {
-      float result, val1, val2;
-      val1 = atof(var1->entityCode);
-      val2 = atof(var2->entityCode);
-      result = calculateFloat(val1, val2, op[0]);
-      snprintf(resultChar, 20, "%f", result);
+    else if(typeOf(a) == 'i') {
+      val1 = (float) atoi(a);
+      type1 = 'i';
     }
-    else if (var1->entityType == 'l') {
-      int result;
-      result = calculateLogic(var1->entityCode, var2->entityCode, op);
-      if (result == 1)
-        strcpy(resultChar, "TRUE");
-      else
-        strcpy(resultChar, "FALSE");
+  }
+  if (b[0] >= 'A' && b[0] <= 'Z') {
+    Symbol *var1 = find(b);
+    val2 = (float)atof(b);
+    type2 = var1->entityType;
+  } else {
+    if (typeOf(b) == 'n') {
+      val2 = atof(b);
+      type2 = 'n';
+    } else if (typeOf(b) == 'i') {
+      val2 = (float)atoi(b);
+      type2 = 'i';
     }
-    return resultChar;
   }
 
+  if (type1 == type2) {
+      if (type1 == 'i') {
+        int result;
+        result = calculateInt((int)val1, (int)val2, op);
+        snprintf(resultChar, 20, "%d", result);
+      } else if (type2 == 'n') {
+        float result;
+        result = calculateFloat(val1, val2, op);
+        snprintf(resultChar, 20, "%f", result);
+      }
+  }
+  else
+    printf("Types differents\n");
   //   NEED TO IMPLEMENT FLOAT INT OPERATIONS
-  printf("Types differents\n");
 }
 int calculateInt(int a, int b, char operator) {
   if(operator == '+')
@@ -211,19 +223,43 @@ float calculateFloat(float a, float b, char operator) {
   else if (operator== '/')
     return a / b;
 }
-int calculateLogic(char* a, char* b, char* and_or) {
-  int val1, val2;
-  if(strcpy(a, "TRUE") == 0)
-    val1 = 1;
-  else
-    val1 = 0;
-  if (strcpy(b, "TRUE") == 0)
-    val1 = 1;
-  else
-    val1 = 0;
+int calculateLogic(int a, int b, char* and_or) {
   if (and_or[0] == 'a')
-    return val1 && val2;
-  return val1 || val2;
+    return a && b;
+  return a || b;
+}
+int calculateCond(char *a, char *b, char *op) {
+  if (typeOf(a) == 'i') {
+    int val1 = atoi(a);
+    int val2 = atoi(b);
+    if (strcmp(op, "==") == 0)
+      return val1 == val2;
+    else if (strcmp(op, "!=") == 0)
+      return val1 != val2;
+    else if (strcmp(op, ">=") == 0)
+      return val1 >= val2;
+    else if (strcmp(op, "<=") == 0)
+      return val1 <= val2;
+    else if (strcmp(op, ">") == 0)
+      return val1 > val2;
+    else if (strcmp(op, "<") == 0)
+      return val1 < val2;
+  } else if (typeOf(a) == 'n') {
+    float val1 = atof(a);
+    float val2 = atof(b);
+    if (strcmp(op, "==") == 0)
+      return val1 == val2;
+    else if (strcmp(op, "!=") == 0)
+      return val1 != val2;
+    else if (strcmp(op, ">=") == 0)
+      return val1 >= val2;
+    else if (strcmp(op, "<=") == 0)
+      return val1 <= val2;
+    else if (strcmp(op, ">") == 0)
+      return val1 > val2;
+    else if (strcmp(op, "<") == 0)
+      return val1 < val2;
+  }
 }
 int main(int argc, char** argv){
 	char nomFichier[20];

@@ -6,5 +6,5 @@ Idf1 <- 2
 Idf12 <- 2+6-(-3)
 Idf2 <- 2. + 0.1 - 0.
 Idf3 <- 's'
-Idf13 <- (TRUE) or (FALSE) and (TRUE) 
-Idf13 <- (1<2) or (FALSE) and (TRUE) 
+Idf13 <- TRUE or FALSE and TRUE 
+Idf15 <- (1>2) or FALSE and TRUE 
