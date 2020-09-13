@@ -31,7 +31,7 @@
 	int entier;
 	float decimal;
 	char charactere;
-	char* str;
+	char str[20];
 }
 %token <str> type
 %token <str> par_ouvr
@@ -62,8 +62,10 @@ S : S affectation  {;}
 | {;}
 ;
 
-affectation : idf variableType equal operation_arithmetique_logique {}
-| type idf variableType equal operation_arithmetique_logique {}
+affectation : idf variableType equal operation_arithmetique_logique {
+  updateEntityVal($1, $4);
+}
+| type idf variableType equal operation_arithmetique_logique {updateEntityVal($2, $5);}
 ;
 
 declaration : type list_idf
@@ -89,33 +91,42 @@ operation_arithmetique: expression_A
 |	expression_A arit_operator operation_arithmetique 
 ;
 
-expression_A : integer
-| numeric
-| character
+expression_A : integer {snprintf($$, 20, "%d", $1);}
+| numeric { snprintf($$, 20, "%f", $1); }
+| character { $$[0] = $1; }
 | par_ouvr operation_arithmetique par_ferm
 ;
 
 operation_comparaison : par_ouvr operation_arithmetique cond_operator operation_comparaison par_ferm
-| par_ouvr logical par_ferm
-| par_ouvr operation_arithmetique cond_operator  operation_arithmetique par_ferm
-;
+| par_ouvr logical par_ferm {
+  if($2 == 1)
+    strcpy($$, "TRUE");
+ else
+   strcpy($$, "FALSE");
+}
+| par_ouvr operation_arithmetique cond_operator operation_arithmetique par_ferm;
 
-operation_logique:  operation_comparaison and_or  operation_logique
-|	operation_comparaison and_or operation_comparaison
+operation_logique:  operation_comparaison and_or  operation_logique {calculate($$, $1, $3, $2);}
+|	operation_comparaison and_or operation_comparaison {calculate($$, $1, $3, $2);}
 ;
 
 
 %%
 void updateEntityVal(char* idf, char* val) {
-  char typeVal;
+  char typeVal = typeOf(val);
+  printf("updating %s with value %s of type %c\n", idf, val, typeVal);
   Symbol *var = find(idf);
   if (var == NULL) {
     insert(idf, val);
-    var->entityType = typeOf(val);
+    var->entityType = typeVal;
   }
   else {
-    if (typeOf(val) == var->entityType)
+    if (typeVal == var->entityType)
       strcpy(var->entityCode, val);
+    else if (var->entityType == ' ') {
+      var->entityType = typeVal;
+      strcpy(var->entityCode, val);
+    }
     else
       yyerror("Type de variable incompatible avec la valeur\n");
   }

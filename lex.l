@@ -24,7 +24,7 @@ taille "["[1-9][0-9]*"]"
 %%
 {idf} {
   if(yyleng<=10){
-    yylval.str=strdup(yytext);
+    strcpy(yylval.str, yytext);
     insert(yytext, "");
     return idf;
   } else
@@ -74,16 +74,16 @@ taille "["[1-9][0-9]*"]"
   return arit_operator;
 };
 "<-" {
-  yylval.str = strdup(yytext);
+  strcpy(yylval.str, yytext);
   return equal;
 };
 "and"|"or" {
-  yylval.str = strdup(yytext);
+  strcpy(yylval.str, yytext);
   return and_or;
 };
 {type_kw} {
-  yylval.str = strdup(yytext);
-  tempType2 = yytext[0] +32;
+  strcpy(yylval.str, yytext);
+  tempType2 = yytext[0] + 32;
   return type;
 };
 {taille} {
@@ -101,6 +101,7 @@ taille "["[1-9][0-9]*"]"
   tempType = tempType2;
   tempType2 = ' ';
 	num_ligne++;
+  printf("Line:%d\n", num_ligne);
 };
 . {
 	printf("erreur lexical a la ligne %d\n", num_ligne);
@@ -196,7 +197,7 @@ int hasType(char* idf) {
 char typeOf(char* val) {
   int size = strlen(val);
   int i;
-  if (strcmp(val, "TRUE") || strcmp(val, "FALSE"))
+  if (strcmp(val, "TRUE") == 0 || strcmp(val, "FALSE") == 0)
     return 'l'; //logical
   if (val[0] >= 'A' && val[0] <= 'z')
     return 'c'; //character
