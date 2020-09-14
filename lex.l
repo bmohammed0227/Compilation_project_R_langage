@@ -2,16 +2,16 @@
 	#include<stdio.h>
 	#include<string.h>
 	#include "syntax.tab.h"
-  #include "symbol_table.h"
-  extern YYSTYPE yylval;
-  void insert(char* idf, char* code);
-  void printList();
-  int indexOfChar(char alphabet);
+	#include "symbol_table.h"
+	extern YYSTYPE yylval;
+	void insert(char* idf, char* code);
+	void printList();
+	int indexOfChar(char alphabet);
 	int num_ligne=1;
-  Symbol* symbolsTable[26];
-  Symbol* find(char *idf);
-  char tempType = ' ';
-  char tempType2 = ' ';
+	Symbol* symbolsTable[26];
+	Symbol* find(char *idf);
+	char tempType = ' ';
+	char tempType2 = ' ';
 %}
 idf [A-Z]([a-z0-9]*)
 integer ([0-9]+)|("("-[0-9]+")")
@@ -171,6 +171,21 @@ Symbol* find(char* idf) {
 
   // if data found, return the current Link
   return current;
+}
+
+char* getVal(char* idf) {
+  Symbol* var = find(idf);
+  if(var != NULL) {
+    return var->entityCode;
+  }
+  return " ";
+}
+
+void setVal(char idf[], char* val) {
+  Symbol* var = find(idf);
+  if(var != NULL) {
+  strcpy(var->entityCode, val);
+  }
 }
 
 char getType(char* idf) {

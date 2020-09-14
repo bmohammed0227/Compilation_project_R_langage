@@ -2,6 +2,7 @@
 	#include <stdio.h>
   #include <stdlib.h>
 	#include <string.h>
+	#include<stdbool.h>
   #include "symbol_table.h"
   char sauvType[20];
   extern int yylex();
@@ -14,6 +15,9 @@
   extern void insert(char *idf, char *code);
   extern char typeOf(char *val);
   extern char tempType;
+  extern char* getVal(char* idf);
+  extern char getType(char* idf);
+  void setVal(char idf[], char* val);
   void yyerror(char *msg);
   void updateEntityVal(char* idf, char* val);
   void updateEntityType(char* idf, char type);
@@ -23,6 +27,7 @@
   float calculateFloat(float a, float b, char operator);
   int calculateLogic(int a, int b, char *and_or);
   int calculateCond(char *a, char *b, char *op);
+   void incrementation_decrementation(char* idf, char arit_op, int entier);
 %}
 %union{
 	int entier;
@@ -56,8 +61,10 @@
 
 S : S affectation  {;}
 | S declaration {;}
+| S incrementation_decrementation {}
 | {;}
 ;
+
 
 affectation : idf variableType equal operation_arithmetique_logique {
   updateEntityVal($1, $4);
@@ -109,6 +116,11 @@ operation_logique:  operation_comparaison and_or  operation_logique {$$ = calcul
 | logical and_or operation_logique { $$ = calculateLogic($1, $3, $2); }
 | logical { $$ = $1; }
 ;
+
+incrementation_decrementation : idf arit_operator equal integer {
+ incrementation_decrementation($1, $2, $4);
+};
+
 
 %%
 void updateEntityVal(char* idf, char* val) {
@@ -261,6 +273,36 @@ int calculateCond(char *a, char *b, char *op) {
       return val1 < val2;
   }
 }
+
+void incrementation_decrementation(char* idf, char arit_op, int entier){
+ 	if(arit_op != '+' && arit_op != '-')
+		yyerror("Operateur arithmetique errone.");
+	if(entier <= 0)
+		yyerror("La valeur doit etre de type integer positif.");
+		
+	char typeIdf = getType(idf);
+	if(typeIdf == 'n' || typeIdf == 'i'){
+		if(arit_op == '-') entier = -entier;
+		char* idfValue = getVal(idf);
+		char result[12];
+		if(typeIdf == 'n'){
+			float i1 = atof(idfValue);
+			i1 += entier;
+			sprintf(result, "%f", i1);
+			setVal(idf, result);
+		}else{
+			int i2 = atoi(idfValue);
+			i2 += entier;
+			sprintf(result, "%d", i2);
+			printf("%s", result);
+			setVal(idf, result);
+		}
+		printf("resultat : %s", result);
+	}else 
+		if(typeIdf == ' ') yyerror("Variable non initialise.");
+			else yyerror("Type incompatible.");
+}
+
 int main(int argc, char** argv){
 	char nomFichier[20];
 	printf("Veuillez entrer le nom du fichier a compiler\n");
