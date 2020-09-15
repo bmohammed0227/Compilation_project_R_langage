@@ -38,17 +38,24 @@
 %token <str> type
 %token <str> par_ouvr
 %token <str> par_ferm
+%token <str> aco_ouvr
+%token <str> aco_ferm
+%token <str> range
 %token virgule
 %token <str> idf
 %token <entier> integer
 %token <decimal> numeric
 %token <charactere> character
 %token <entier> logical
+%token <str> index_idf
 %token <str> equal;
 %token <charactere> arit_operator
 %token <str> cond_operator
 %token <str> and_or
 %token <entier> taille
+%token <str> while_kw
+%token <str> for_kw
+%token <str> in_kw
 %start S
 %type <str> affectation
 %type <str> operation_arithmetique_logique
@@ -57,11 +64,13 @@
 %type <entier> operation_comparaison
 %type <entier> variableType
 %type <str> expression_A
+%type loop
 %%
 
 S : S affectation  {;}
 | S declaration {;}
 | S incrementation_decrementation {}
+| S loop
 | {;}
 ;
 
@@ -104,12 +113,15 @@ operation_arithmetique: expression_A {strcpy($$, $1);}
 expression_A : integer {snprintf($$, 20, "%d", $1);}
 | numeric { snprintf($$, 20, "%f", $1); }
 | character { $$[0] = $1; $$[1] = '\0'; }
+| idf {strcpy($$, getVal($1));}
 // | par_ouvr expression_A par_ferm {strcpy($$, $2);}
 ;
 
 operation_comparaison : par_ouvr operation_arithmetique cond_operator operation_arithmetique par_ferm {
   $$ = calculateCond($2, $4, $3);
- };
+}
+| operation_arithmetique cond_operator operation_arithmetique {$$ = calculateCond($1, $3, $2);}
+;
 
 operation_logique:  operation_comparaison and_or  operation_logique {$$ = calculateLogic($1, $3, $2);}
 |	operation_comparaison {$$ = $1;}
@@ -121,11 +133,13 @@ incrementation_decrementation : idf arit_operator equal integer {
  incrementation_decrementation($1, $2, $4);
 };
 
+loop : while_kw par_ouvr operation_logique par_ferm aco_ouvr S aco_ferm
+| for_kw par_ouvr index_idf in_kw integer range integer par_ferm aco_ouvr S aco_ferm
+;
 
 %%
 void updateEntityVal(char* idf, char* val) {
   char typeVal = typeOf(val);
-  printf("updating %s with value %s of type %c\n", idf, val, typeVal);
   Symbol *var = find(idf);
   if (var == NULL) {
     insert(idf, val);

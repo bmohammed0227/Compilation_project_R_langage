@@ -7,4 +7,9 @@ Idf12 <- 2+6-(-3)
 Idf2 <- 2. + 0.1 - 0.
 Idf3 <- 's'
 Idf13 <- TRUE or FALSE and TRUE 
-Idf15 <- (1>2) or FALSE and TRUE 
+FOR(i IN 1:10) {
+    WHILE(Idf1 < 0) {
+        Idf15 <- (1>2) or FALSE and TRUE
+        Idf1 -<- 1
+    }
+}

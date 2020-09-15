@@ -81,11 +81,30 @@ taille "["[1-9][0-9]*"]"
   strcpy(yylval.str, yytext);
   return and_or;
 };
+[a-z]+ {
+  strcpy(yylval.str, yytext);
+  return index_idf;
+}
 {type_kw} {
   strcpy(yylval.str, yytext);
   tempType2 = yytext[0] + 32;
   return type;
 };
+"WHILE" {
+  strcpy(yylval.str, yytext);
+  return while_kw;
+}
+"FOR" {
+  strcpy(yylval.str, yytext);
+  return for_kw;
+}
+"IN" {
+  strcpy(yylval.str, yytext);
+  return in_kw;
+}
+":" {
+  return range;
+}
 {taille} {
 	char temp[strlen(yytext)-2];
     strncpy(temp, yytext+1, strlen(yytext)-2);
@@ -94,6 +113,8 @@ taille "["[1-9][0-9]*"]"
 };
 [(] return par_ouvr;
 [)] return par_ferm;
+"{" return aco_ouvr;
+"}" return aco_ferm;
 "," return virgule;
 "#"([^\n]*)
 [ \t]
@@ -101,7 +122,6 @@ taille "["[1-9][0-9]*"]"
   tempType = tempType2;
   tempType2 = ' ';
 	num_ligne++;
-  printf("Line:%d\n", num_ligne);
 };
 . {
 	printf("erreur lexical a la ligne %d\n", num_ligne);
