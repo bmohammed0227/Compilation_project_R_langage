@@ -13,3 +13,15 @@ FOR(i IN 1:10) {
         Idf1 -<- 1
     }
 }
+Idf <- 0
+IF(Idf>=1){
+	Idf <- 1
+}ELSE IF(Idf>=2){
+	Idf <- 2
+}ELSE {
+	Idf <-100
+}
+
+Z <- Idf-1
+X <- Z*2
+Y <- IFELSE((Z>0), X, 1)
