@@ -105,6 +105,12 @@ taille "["[1-9][0-9]*"]"
 ":" {
   return range;
 }
+"IF" {
+	return if_token;
+}
+"ELSE" {
+	return else_token;
+}
 {taille} {
 	char temp[strlen(yytext)-2];
     strncpy(temp, yytext+1, strlen(yytext)-2);

@@ -56,6 +56,8 @@
 %token <str> while_kw
 %token <str> for_kw
 %token <str> in_kw
+%token <str> if_token
+%token <str> else_token
 %start S
 %type <str> affectation
 %type <str> operation_arithmetique_logique
@@ -64,13 +66,15 @@
 %type <entier> operation_comparaison
 %type <entier> variableType
 %type <str> expression_A
-%type loop
+%type <str> loop
+%type <str> if_instruction 
 %%
 
 S : S affectation  {;}
 | S declaration {;}
 | S incrementation_decrementation {}
 | S loop
+| S if_instruction 
 | {;}
 ;
 
@@ -79,6 +83,8 @@ affectation : idf variableType equal operation_arithmetique_logique {
   updateEntityVal($1, $4);
 }
 | type idf variableType equal operation_arithmetique_logique {updateEntityVal($2, $5);}
+| idf variableType equal if_token else_token par_ouvr operation_logique virgule operation_arithmetique_logique virgule operation_arithmetique_logique par_ferm
+| type idf variableType equal if_token else_token par_ouvr operation_logique virgule operation_arithmetique_logique virgule operation_arithmetique_logique par_ferm
 ;
 
 declaration : type list_idf
@@ -136,6 +142,12 @@ incrementation_decrementation : idf arit_operator equal integer {
 loop : while_kw par_ouvr operation_logique par_ferm aco_ouvr S aco_ferm
 | for_kw par_ouvr index_idf in_kw integer range integer par_ferm aco_ouvr S aco_ferm
 ;
+
+if_instruction : if_token par_ouvr operation_logique par_ferm aco_ouvr S aco_ferm ELSE
+
+ELSE : else_token if_instruction 
+| else_token aco_ouvr S aco_ferm
+|
 
 %%
 void updateEntityVal(char* idf, char* val) {
