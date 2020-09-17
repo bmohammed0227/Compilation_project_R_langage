@@ -1,10 +1,11 @@
-INTEGER Idf20
+INTEGER Idf1
+Idf1 <- 5+2
 FOR(i IN 1:10) {
 	WHILE(Idf1 < 0) {
-			Idf15 <- (1>2) or FALSE and TRUE
+			Idf2 <- (1>2) or FALSE and TRUE
 			Idf1 -<- 1
 			WHILE(Idf1 < 0) {
-				Idf15 <- (1>2) or FALSE and TRUE
+				Idf2 <- (1>2) or FALSE and TRUE
 				Idf1 -<- 1
 			}
 			FOR(i IN 1:10) {
@@ -12,43 +13,15 @@ FOR(i IN 1:10) {
 			}
 		}
 }
-
-INTEGER Idf21 <- 2*8-((-1)*2+1)
-INTEGER Idf22, Idf23
+INTEGER Idf3 <- 2*8-((-1)*2+1)
+INTEGER Idf4, Idf5
+INTEGER Idf3
 NUMERIC Tableau[20]
 Idf1 <- 2
 Idf12 <- 2+6-(-3)
 Idf2 <- 2. + 0.1 - 0.
 Idf3 <- 's'
 Idf13 <- TRUE or FALSE and TRUE 
-Idf <- 0
-IF(Idf>=1){
-	Idf <- 1
-	Idf <- 1
-	Idf <- 1
-}ELSE IF(Idf>=(-1)){
-	Idf +<- 1
-	Idf <- 1
-}ELSE IF(Idf>=(-3)){
-	Idf +<- 1
-	Idf <- 1
-}ELSE {
-	Idf <- 10
-}
-
-Z <- Idf-1
+Z <- Idf1-1
 X <- Z*2
 Y <- IFELSE((Z>0), X, 1)
-IF(Idf>=1){
-	Idf <- 1
-	Idf <- 1
-	Idf <- 1
-}ELSE IF(Idf>=(-1)){
-	Idf +<- 1
-	Idf <- 1
-}ELSE IF(Idf>=(-3)){
-	Idf +<- 1
-	Idf <- 1
-}ELSE {
-	Idf <- 10
-}

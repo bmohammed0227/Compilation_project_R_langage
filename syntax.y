@@ -106,10 +106,23 @@ affectation : idf variableType equal operation_arithmetique_logique {
 	quadr(":=", $2, "", getVal($2));
 }
 | idf variableType equal if_token else_token par_ouvr operation_logique virgule operation_arithmetique_logique virgule operation_arithmetique_logique par_ferm {
-	quadr(":=", $1, "", getVal($1));
+	if($7==1){
+		updateEntityVal($1, $9);
+		quadr(":=", $1, "", $9);
+	}else{
+		updateEntityVal($1, $11);
+		quadr(":=", $1, "", $11);
+	}
+	
 }
 | type idf variableType equal if_token else_token par_ouvr operation_logique virgule operation_arithmetique_logique virgule operation_arithmetique_logique par_ferm{
-	quadr(":=", $2, "", getVal($2));
+	if($8==1){
+		updateEntityVal($2, $10);
+		quadr(":=", $2, "", $10);
+	}else{
+		updateEntityVal($2, $12);
+		quadr(":=", $2, "", $12);
+	}
 }
 ;
 
