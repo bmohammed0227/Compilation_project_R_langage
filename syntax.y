@@ -34,6 +34,15 @@
 	int sauv_BZ_if;
 	int sauv_BR_if[20];
 	int sauv_BR_if_indice = 0;
+	char sauv_BR_while[20][20];
+	int sauv_BR_while_indice = 0;
+	int sauv_bz_while[20];
+	int sauv_bz_while_indice = 0;
+	char sauv_BR_for[20][20];
+	int sauv_BR_for_indice = 0;
+	int sauv_bz_for[20];
+	int sauv_bz_for_indice = 0;
+	char qc_char[20];
 	void quadr(char opr[],char op1[],char op2[],char res[]);
 	void ajout_quad(int num_quad, int colon_quad, char val []);
 	void afficher_qdr();
@@ -82,7 +91,7 @@
 S : S affectation  {quadr("Instruction_affectation", "", "", "");}
 | S declaration {quadr("Instruction_declaration", "", "", "");}
 | S incrementation_decrementation {quadr("Instruction_incrementation_decrementation", "", "", "");}
-| S loop {quadr("boucle", "", "", "");}
+| S loop {}
 | S if_instruction 
 | {;}
 ;
@@ -148,8 +157,38 @@ incrementation_decrementation : idf arit_operator equal integer {
  incrementation_decrementation($1, $2, $4);
 };
 
-loop : while_kw par_ouvr operation_logique par_ferm aco_ouvr S aco_ferm
-| for_kw par_ouvr index_idf in_kw integer range integer par_ferm aco_ouvr S aco_ferm
+loop : while_kw par_ouvr operation_logique par_ferm 
+{
+	sprintf(sauv_BR_while[sauv_BR_while_indice], "%d", qc);
+	sauv_BR_while_indice++;
+	sauv_bz_while[sauv_bz_while_indice] = qc;
+	sauv_bz_while_indice++;
+	quadr("BZ", "", "Cond", "");  
+}
+aco_ouvr S aco_ferm
+{
+	quadr("BR", sauv_BR_while[sauv_BR_while_indice-1], "", "");
+	sauv_BR_while_indice--;
+	sprintf(qc_char, "%d", qc);
+	ajout_quad(sauv_bz_while[sauv_bz_while_indice-1], 1, qc_char);
+	sauv_bz_while_indice--;
+}
+| for_kw par_ouvr index_idf in_kw integer range integer par_ferm 
+{
+	sprintf(sauv_BR_for[sauv_BR_for_indice], "%d", qc);
+	sauv_BR_for_indice++;
+	sauv_bz_for[sauv_bz_for_indice] = qc;
+	sauv_bz_for_indice++;
+	quadr("BZ", "", "Cond", "");  
+}
+aco_ouvr S aco_ferm 
+{
+	quadr("BR", sauv_BR_for[sauv_BR_for_indice-1], "", "");
+	sauv_BR_for_indice--;
+	sprintf(qc_char, "%d", qc);
+	ajout_quad(sauv_bz_for[sauv_bz_for_indice-1], 1, qc_char);
+	sauv_bz_for_indice--;
+}
 ;
 
 if_instruction : if_token par_ouvr operation_logique par_ferm 
@@ -164,12 +203,10 @@ ELSE : else_token
 	quadr("BR", "", "", "");
 	sauv_BR_if[sauv_BR_if_indice] = qc;
 	sauv_BR_if_indice++;
-	char qc_char[20];
 	sprintf(qc_char, "%d", qc);
 	ajout_quad(sauv_BZ_if-1, 1, qc_char);
 }
  if_instruction {
-	char qc_char[20];
 	sprintf(qc_char, "%d", qc);
 	for(int i=0; i<=sauv_BR_if_indice; i++){
 		ajout_quad(sauv_BR_if[i]-1, 1, qc_char);
@@ -180,12 +217,10 @@ ELSE : else_token
 	quadr("BR", "", "", "");
 	sauv_BR_if[sauv_BR_if_indice] = qc;
 	sauv_BR_if_indice++;
-	char qc_char[20];
 	sprintf(qc_char, "%d", qc);
 	ajout_quad(sauv_BZ_if-1, 1, qc_char);
 }
  aco_ouvr S aco_ferm {
-	char qc_char[20];
 	sprintf(qc_char, "%d", qc);
 	for(int i=0; i<=sauv_BR_if_indice; i++){
 		ajout_quad(sauv_BR_if[i]-1, 1, qc_char);
@@ -193,7 +228,6 @@ ELSE : else_token
 	sauv_BR_if_indice = 0;
 }
 | {
-	char qc_char[20];
 	sprintf(qc_char, "%d", qc);
 	ajout_quad(sauv_BZ_if-1, 1, qc_char);
 	sauv_BR_if_indice = 0;
