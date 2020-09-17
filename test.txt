@@ -18,11 +18,29 @@ IF(Idf>=1){
 	Idf <- 1
 	Idf <- 1
 	Idf <- 1
-}ELSE {
+}ELSE IF(Idf>=(-1)){
 	Idf +<- 1
 	Idf <- 1
+}ELSE IF(Idf>=(-3)){
+	Idf +<- 1
+	Idf <- 1
+}ELSE {
+	Idf <- 10
 }
 
 Z <- Idf-1
 X <- Z*2
 Y <- IFELSE((Z>0), X, 1)
+IF(Idf>=1){
+	Idf <- 1
+	Idf <- 1
+	Idf <- 1
+}ELSE IF(Idf>=(-1)){
+	Idf +<- 1
+	Idf <- 1
+}ELSE IF(Idf>=(-3)){
+	Idf +<- 1
+	Idf <- 1
+}ELSE {
+	Idf <- 10
+}

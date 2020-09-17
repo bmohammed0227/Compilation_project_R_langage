@@ -32,7 +32,8 @@
 	qdr quad[1000];
 	int qc=0;
 	int sauv_BZ_if;
-	int sauv_BR_if;
+	int sauv_BR_if[20];
+	int sauv_BR_if_indice = 0;
 	void quadr(char opr[],char op1[],char op2[],char res[]);
 	void ajout_quad(int num_quad, int colon_quad, char val []);
 	void afficher_qdr();
@@ -155,42 +156,47 @@ if_instruction : if_token par_ouvr operation_logique par_ferm
 {
 	quadr("BZ", "", "Cond", "");
 	sauv_BZ_if = qc;
-	qc++;
 }
 aco_ouvr S aco_ferm ELSE 
 
 ELSE : else_token
  {
 	quadr("BR", "", "", "");
-	sauv_BR_if = qc;
+	sauv_BR_if[sauv_BR_if_indice] = qc;
+	sauv_BR_if_indice++;
 	char qc_char[20];
 	sprintf(qc_char, "%d", qc);
 	ajout_quad(sauv_BZ_if-1, 1, qc_char);
-	qc++;
 }
  if_instruction {
 	char qc_char[20];
 	sprintf(qc_char, "%d", qc);
-	ajout_quad(sauv_BR_if-1, 1, qc_char);
+	for(int i=0; i<=sauv_BR_if_indice; i++){
+		ajout_quad(sauv_BR_if[i]-1, 1, qc_char);
+	}
+	sauv_BR_if_indice = 0;
 }
 | else_token {
 	quadr("BR", "", "", "");
-	sauv_BR_if = qc;
+	sauv_BR_if[sauv_BR_if_indice] = qc;
+	sauv_BR_if_indice++;
 	char qc_char[20];
 	sprintf(qc_char, "%d", qc);
 	ajout_quad(sauv_BZ_if-1, 1, qc_char);
-	qc++;
 }
  aco_ouvr S aco_ferm {
 	char qc_char[20];
 	sprintf(qc_char, "%d", qc);
-	ajout_quad(sauv_BR_if-1, 1, qc_char);
+	for(int i=0; i<=sauv_BR_if_indice; i++){
+		ajout_quad(sauv_BR_if[i]-1, 1, qc_char);
+	}
+	sauv_BR_if_indice = 0;
 }
 | {
 	char qc_char[20];
 	sprintf(qc_char, "%d", qc);
 	ajout_quad(sauv_BZ_if-1, 1, qc_char);
-	qc++;
+	sauv_BR_if_indice = 0;
 }
 
 %%
@@ -374,6 +380,7 @@ void incrementation_decrementation(char* idf, char arit_op, int entier){
 }
 
 int main(int argc, char** argv){
+	
 	char nomFichier[20];
 	printf("Veuillez entrer le nom du fichier a compiler\n");
 	scanf("%s", nomFichier);
