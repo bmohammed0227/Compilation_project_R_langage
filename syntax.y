@@ -88,21 +88,29 @@
 %type <str> if_instruction 
 %%
 
-S : S affectation  {quadr("Instruction_affectation", "", "", "");}
-| S declaration {quadr("Instruction_declaration", "", "", "");}
+S : S affectation  
+| S declaration 
 | S incrementation_decrementation 
-| S loop {}
+| S loop 
 | S if_instruction 
-| {;}
+| 
 ;
 
 
 affectation : idf variableType equal operation_arithmetique_logique {
-  updateEntityVal($1, $4);
+	updateEntityVal($1, $4);
+	quadr(":=", $1, "", getVal($1));
 }
-| type idf variableType equal operation_arithmetique_logique {updateEntityVal($2, $5);}
-| idf variableType equal if_token else_token par_ouvr operation_logique virgule operation_arithmetique_logique virgule operation_arithmetique_logique par_ferm
-| type idf variableType equal if_token else_token par_ouvr operation_logique virgule operation_arithmetique_logique virgule operation_arithmetique_logique par_ferm
+| type idf variableType equal operation_arithmetique_logique {
+	updateEntityVal($2, $5);
+	quadr(":=", $2, "", getVal($2));
+}
+| idf variableType equal if_token else_token par_ouvr operation_logique virgule operation_arithmetique_logique virgule operation_arithmetique_logique par_ferm {
+	quadr(":=", $1, "", getVal($1));
+}
+| type idf variableType equal if_token else_token par_ouvr operation_logique virgule operation_arithmetique_logique virgule operation_arithmetique_logique par_ferm{
+	quadr(":=", $2, "", getVal($2));
+}
 ;
 
 declaration : type list_idf
@@ -110,8 +118,12 @@ declaration : type list_idf
 
 list_idf : idf variableType {
   updateEntityType($1, tempType);
-  updateEntitySize($1, $2);}
-| idf variableType virgule list_idf {
+  updateEntitySize($1, $2);
+  quadr("Dec", $1, "", "");
+}
+| idf variableType {
+ quadr("Dec", $1, "", "");
+} virgule list_idf {
   updateEntityType($1, tempType);
   updateEntitySize($1, $2);
 };
@@ -167,7 +179,9 @@ loop : while_kw par_ouvr operation_logique par_ferm
 	sauv_BR_while_indice++;
 	sauv_bz_while[sauv_bz_while_indice] = qc;
 	sauv_bz_while_indice++;
-	quadr("BZ", "", "Cond", "");  
+	if($3 == 0)
+		quadr("BZ", "", "FALSE", "");
+	else quadr("BZ", "", "TRUE", "");
 }
 aco_ouvr S aco_ferm
 {
@@ -183,7 +197,9 @@ aco_ouvr S aco_ferm
 	sauv_BR_for_indice++;
 	sauv_bz_for[sauv_bz_for_indice] = qc;
 	sauv_bz_for_indice++;
-	quadr("BZ", "", "Cond", "");  
+	if($5 == $7)
+		quadr("BZ", "", "FALSE", "");
+	else quadr("BZ", "", "TRUE", ""); 
 }
 aco_ouvr S aco_ferm 
 {
@@ -197,7 +213,9 @@ aco_ouvr S aco_ferm
 
 if_instruction : if_token par_ouvr operation_logique par_ferm 
 {
-	quadr("BZ", "", "Cond", "");
+	if($3 == 0)
+		quadr("BZ", "", "FALSE", "");
+	else quadr("BZ", "", "TRUE", ""); 
 	sauv_BZ_if = qc;
 }
 aco_ouvr S aco_ferm ELSE 
