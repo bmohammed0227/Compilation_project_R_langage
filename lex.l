@@ -125,9 +125,10 @@ taille "["[1-9][0-9]*"]"
 "#"([^\n]*)
 [ \t]
 [\n] {
-  tempType = tempType2;
-  tempType2 = ' ';
+	tempType = tempType2;
+	tempType2 = ' ';
 	num_ligne++;
+	return num_ligne_token;
 };
 . {
 	printf("erreur lexical a la ligne %d\n", num_ligne);
@@ -279,3 +280,9 @@ int setArraySize(char* idf, int size) {
 int indexOfChar(char alphabet) {
   return (int)(alphabet - 'A');
 }
+
+
+
+
+
+

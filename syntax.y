@@ -10,7 +10,7 @@
 	extern int yyparse();
 	extern void printList();
 	extern FILE *yyin;
-	extern int num_ligne;
+	int numero_ligne = 1;
 	extern Symbol* symbolsTable[26];
 	extern Symbol *find(char *idf);
 	extern void insert(char *idf, char *code);
@@ -76,6 +76,7 @@
 %token <str> in_kw
 %token <str> if_token
 %token <str> else_token
+%token num_ligne_token
 %start S
 %type <str> affectation
 %type <str> operation_arithmetique_logique
@@ -88,14 +89,17 @@
 %type <str> if_instruction 
 %%
 
-S : S affectation  
-| S declaration 
-| S incrementation_decrementation 
-| S loop 
-| S if_instruction 
-| 
+S : S affectation  nouvelle_ligne
+| S declaration nouvelle_ligne
+| S incrementation_decrementation nouvelle_ligne
+| S loop nouvelle_ligne
+| S if_instruction nouvelle_ligne
+| nouvelle_ligne
 ;
 
+nouvelle_ligne : num_ligne_token {numero_ligne++;}
+|
+;
 
 affectation : idf variableType equal operation_arithmetique_logique {
 	updateEntityVal($1, $4);
@@ -469,7 +473,7 @@ int yywrap(){
 }
 
 void yyerror(char* msg){
-	printf("Erreur syntaxique a la ligne %d\n", num_ligne);
+	printf("Erreur syntaxique a la ligne %d\n", numero_ligne);
 	printf("%s\n", msg);
 }
 
