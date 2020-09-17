@@ -16,10 +16,11 @@ FOR(i IN 1:10) {
 Idf <- 0
 IF(Idf>=1){
 	Idf <- 1
-}ELSE IF(Idf>=2){
-	Idf <- 2
+	Idf <- 1
+	Idf <- 1
 }ELSE {
-	Idf <-100
+	Idf +<- 1
+	Idf <- 1
 }
 
 Z <- Idf-1

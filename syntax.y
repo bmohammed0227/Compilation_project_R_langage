@@ -1,33 +1,41 @@
 %{
 	#include <stdio.h>
-  #include <stdlib.h>
+	#include <stdlib.h>
 	#include <string.h>
 	#include<stdbool.h>
-  #include "symbol_table.h"
-  char sauvType[20];
-  extern int yylex();
-  extern int yyparse();
-  extern void printList();
+	#include "symbol_table.h"
+	#include "quadruplet.h"
+	char sauvType[20];
+	extern int yylex();
+	extern int yyparse();
+	extern void printList();
 	extern FILE *yyin;
 	extern int num_ligne;
-  extern Symbol* symbolsTable[26];
-  extern Symbol *find(char *idf);
-  extern void insert(char *idf, char *code);
-  extern char typeOf(char *val);
-  extern char tempType;
-  extern char* getVal(char* idf);
-  extern char getType(char* idf);
-  void setVal(char idf[], char* val);
-  void yyerror(char *msg);
-  void updateEntityVal(char* idf, char* val);
-  void updateEntityType(char* idf, char type);
-  void updateEntitySize(char *idf, int size);
-  void calculate(char* resultChar, char* idf1, char* idf2, char op);
-  int calculateInt(int a, int b, char operator);
-  float calculateFloat(float a, float b, char operator);
-  int calculateLogic(int a, int b, char *and_or);
-  int calculateCond(char *a, char *b, char *op);
-   void incrementation_decrementation(char* idf, char arit_op, int entier);
+	extern Symbol* symbolsTable[26];
+	extern Symbol *find(char *idf);
+	extern void insert(char *idf, char *code);
+	extern char typeOf(char *val);
+	extern char tempType;
+	extern char* getVal(char* idf);
+	extern char getType(char* idf);
+	void setVal(char idf[], char* val);
+	void yyerror(char *msg);
+	void updateEntityVal(char* idf, char* val);
+	void updateEntityType(char* idf, char type);
+	void updateEntitySize(char *idf, int size);
+	void calculate(char* resultChar, char* idf1, char* idf2, char op);
+	int calculateInt(int a, int b, char operator);
+	float calculateFloat(float a, float b, char operator);
+	int calculateLogic(int a, int b, char *and_or);
+	int calculateCond(char *a, char *b, char *op);
+	void incrementation_decrementation(char* idf, char arit_op, int entier);
+	qdr quad[1000];
+	int qc=0;
+	int sauv_BZ_if;
+	int sauv_BR_if;
+	void quadr(char opr[],char op1[],char op2[],char res[]);
+	void ajout_quad(int num_quad, int colon_quad, char val []);
+	void afficher_qdr();
 %}
 %union{
 	int entier;
@@ -70,10 +78,10 @@
 %type <str> if_instruction 
 %%
 
-S : S affectation  {;}
-| S declaration {;}
-| S incrementation_decrementation {}
-| S loop
+S : S affectation  {quadr("Instruction_affectation", "", "", "");}
+| S declaration {quadr("Instruction_declaration", "", "", "");}
+| S incrementation_decrementation {quadr("Instruction_incrementation_decrementation", "", "", "");}
+| S loop {quadr("boucle", "", "", "");}
 | S if_instruction 
 | {;}
 ;
@@ -143,11 +151,47 @@ loop : while_kw par_ouvr operation_logique par_ferm aco_ouvr S aco_ferm
 | for_kw par_ouvr index_idf in_kw integer range integer par_ferm aco_ouvr S aco_ferm
 ;
 
-if_instruction : if_token par_ouvr operation_logique par_ferm aco_ouvr S aco_ferm ELSE
+if_instruction : if_token par_ouvr operation_logique par_ferm 
+{
+	quadr("BZ", "", "Cond", "");
+	sauv_BZ_if = qc;
+	qc++;
+}
+aco_ouvr S aco_ferm ELSE 
 
-ELSE : else_token if_instruction 
-| else_token aco_ouvr S aco_ferm
-|
+ELSE : else_token
+ {
+	quadr("BR", "", "", "");
+	sauv_BR_if = qc;
+	char qc_char[20];
+	sprintf(qc_char, "%d", qc);
+	ajout_quad(sauv_BZ_if-1, 1, qc_char);
+	qc++;
+}
+ if_instruction {
+	char qc_char[20];
+	sprintf(qc_char, "%d", qc);
+	ajout_quad(sauv_BR_if-1, 1, qc_char);
+}
+| else_token {
+	quadr("BR", "", "", "");
+	sauv_BR_if = qc;
+	char qc_char[20];
+	sprintf(qc_char, "%d", qc);
+	ajout_quad(sauv_BZ_if-1, 1, qc_char);
+	qc++;
+}
+ aco_ouvr S aco_ferm {
+	char qc_char[20];
+	sprintf(qc_char, "%d", qc);
+	ajout_quad(sauv_BR_if-1, 1, qc_char);
+}
+| {
+	char qc_char[20];
+	sprintf(qc_char, "%d", qc);
+	ajout_quad(sauv_BZ_if-1, 1, qc_char);
+	qc++;
+}
 
 %%
 void updateEntityVal(char* idf, char* val) {
@@ -339,8 +383,9 @@ int main(int argc, char** argv){
 		return -1;
 	}
 	yyin = file;
-  yyparse();
-  printList();
+    yyparse();
+    printList();
+	afficher_qdr();
 	return 0;
 }
 
@@ -349,5 +394,46 @@ int yywrap(){
 
 void yyerror(char* msg){
 	printf("Erreur syntaxique a la ligne %d\n", num_ligne);
-  printf("%s\n", msg);
+	printf("%s\n", msg);
 }
+
+
+////////////////////////
+// Partie quadruplet///
+//////////////////////
+
+// ajout d'une ligne
+void quadr(char opr[],char op1[],char op2[],char res[])
+{
+	strcpy(quad[qc].oper, opr);
+	strcpy(quad[qc].op1, op1);
+	strcpy(quad[qc].op2, op2);
+	strcpy(quad[qc].res, res);
+	qc++;
+}
+
+// ajout d'une colonne
+void ajout_quad(int num_quad, int colon_quad, char val [])
+{
+if (colon_quad==0)    strcpy(quad[num_quad].oper, val);
+else if (colon_quad==1)   strcpy(quad[num_quad].op1, val);
+         else if (colon_quad==2)    strcpy(quad[num_quad].op2, val);
+                   else if (colon_quad==3)    strcpy(quad[num_quad].res, val);
+}
+
+// affichage
+void afficher_qdr()
+{
+printf("*********************LesQuadruplets***********************\n");
+
+int i;
+
+for(i=0;i<qc;i++)
+		{
+
+printf("\n %d - ( %s  ,  %s  ,  %s  ,  %s )",i,quad[i].oper,quad[i].op1,quad[i].op2,quad[i].res); 
+printf("\n---------------------------------------------------\n");
+
+}
+}
+
