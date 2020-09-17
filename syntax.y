@@ -90,7 +90,7 @@
 
 S : S affectation  {quadr("Instruction_affectation", "", "", "");}
 | S declaration {quadr("Instruction_declaration", "", "", "");}
-| S incrementation_decrementation {quadr("Instruction_incrementation_decrementation", "", "", "");}
+| S incrementation_decrementation 
 | S loop {}
 | S if_instruction 
 | {;}
@@ -155,6 +155,10 @@ operation_logique:  operation_comparaison and_or  operation_logique {$$ = calcul
 
 incrementation_decrementation : idf arit_operator equal integer {
  incrementation_decrementation($1, $2, $4);
+ char integer_str[20];
+ sprintf(integer_str, "%d", $4);
+ if($2 == '+') quadr("+", $1, integer_str, $1);
+ else quadr("-", $1, integer_str, $1);
 };
 
 loop : while_kw par_ouvr operation_logique par_ferm 
