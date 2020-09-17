@@ -46,6 +46,7 @@
 	void quadr(char opr[],char op1[],char op2[],char res[]);
 	void ajout_quad(int num_quad, int colon_quad, char val []);
 	void afficher_qdr();
+	void generation_code_machine();
 %}
 %union{
 	int entier;
@@ -446,7 +447,6 @@ void incrementation_decrementation(char* idf, char arit_op, int entier){
 			printf("%s", result);
 			setVal(idf, result);
 		}
-		printf("resultat : %s", result);
 	}else 
 		if(typeIdf == ' ') yyerror("Variable non initialise.");
 			else yyerror("Type incompatible.");
@@ -466,14 +466,38 @@ int main(int argc, char** argv){
     yyparse();
     printList();
 	afficher_qdr();
+	generation_code_machine();
 	return 0;
 }
 
 int yywrap(){
 }
 
+
+void generation_code_machine(){
+	printf("Generation du code machine :\n");
+	printf("______________________________________\n");
+	for(int i=0; i<qc; i++){
+        if((strcmp(quad[i].oper, ":="))==0){
+            printf("MOV %s, %s\n",quad[i].op1, quad[i].res);
+        }else   if((strcmp(quad[i].oper, "Dec"))==0){
+            printf("%s EQU %d\n",quad[i].op1, 0);
+        }else   if((strcmp(quad[i].oper, "BZ"))==0){
+            printf("%d : CMP %s, 0\n",i, quad[i].op2);
+            printf("JE label %s\n", quad[i].op1);
+        }else   if((strcmp(quad[i].oper, "BR"))==0){
+            printf("%d : JMP %s\n",i, quad[i].op1);
+        }else   if((strcmp(quad[i].oper, "+"))==0){
+            printf("ADD : %s, %s",quad[i].res, quad[i].op2);
+        }else   if((strcmp(quad[i].oper, "-"))==0){
+            printf("SUB : %s, %s",quad[i].res, quad[i].op2);
+        }
+
+    }
+}
+
 void yyerror(char* msg){
-	printf("Erreur syntaxique a la ligne %d\n", numero_ligne);
+	printf("\nErreur syntaxique a la ligne %d\n", numero_ligne);
 	printf("%s\n", msg);
 }
 
