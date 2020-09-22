@@ -103,30 +103,64 @@ nouvelle_ligne : num_ligne_token {numero_ligne++;}
 ;
 
 affectation : idf variableType equal operation_arithmetique_logique {
-	updateEntityVal($1, $4);
-	quadr(":=", $1, "", getVal($1));
+	char idf_array[strlen($1)];
+	strcpy(idf_array, $1);
+	if($2 != 0){
+		char size[10];
+		sprintf(size, "@%d", $2);
+		strcat(idf_array, size);
+	}
+	updateEntityVal(idf_array, $4);
+	quadr(":=", idf_array, "", getVal(idf_array));
 }
 | type idf variableType equal operation_arithmetique_logique {
-	updateEntityVal($2, $5);
-	quadr(":=", $2, "", getVal($2));
+
+	char idf_array[strlen($2)];
+	strcpy(idf_array, $2);
+	if($3 != 0){
+		char size[10];
+		sprintf(size, "@%d", $3);
+		strcat(idf_array, size);
+	}
+	
+	updateEntityVal(idf_array, $5);
+	quadr(":=", idf_array, "", getVal(idf_array));
 }
 | idf variableType equal if_token else_token par_ouvr operation_logique virgule operation_arithmetique_logique virgule operation_arithmetique_logique par_ferm {
+
+	char idf_array[strlen($1)];
+	strcpy(idf_array, $1);
+	if($2 != 0){
+		char size[10];
+		sprintf(size, "@%d", $2);
+		strcat(idf_array, size);
+	}
+	
 	if($7==1){
-		updateEntityVal($1, $9);
-		quadr(":=", $1, "", $9);
+		updateEntityVal(idf_array, $9);
+		quadr(":=", idf_array, "", $9);
 	}else{
-		updateEntityVal($1, $11);
-		quadr(":=", $1, "", $11);
+		updateEntityVal(idf_array, $11);
+		quadr(":=", idf_array, "", $11);
 	}
 	
 }
 | type idf variableType equal if_token else_token par_ouvr operation_logique virgule operation_arithmetique_logique virgule operation_arithmetique_logique par_ferm{
+
+	char idf_array[strlen($2)];
+	strcpy(idf_array, $2);
+	if($3 != 0){
+		char size[10];
+		sprintf(size, "@%d", $3);
+		strcat(idf_array, size);
+	}
+	
 	if($8==1){
-		updateEntityVal($2, $10);
-		quadr(":=", $2, "", $10);
+		updateEntityVal(idf_array, $10);
+		quadr(":=", idf_array, "", $10);
 	}else{
-		updateEntityVal($2, $12);
-		quadr(":=", $2, "", $12);
+		updateEntityVal(idf_array, $12);
+		quadr(":=", idf_array, "", $12);
 	}
 }
 ;
@@ -135,16 +169,57 @@ declaration : type list_idf
 ;
 
 list_idf : idf variableType {
-  updateEntityType($1, tempType);
-  updateEntitySize($1, $2);
-  quadr("Dec", $1, "", "");
+	if($2 ==0){
+		//declaration normal
+		updateEntityType($1, tempType);
+		updateEntitySize($1, $2);
+		quadr("Dec", $1, "", "");
+	}else{
+		//declaration multiple
+		char idf_array[strlen($1)];
+		strcpy(idf_array, $1);
+		updateEntityType(idf_array, tempType);
+		updateEntitySize(idf_array, $2);
+		int size = $2;
+		for(int i=1; i<=size; i++){
+			char i_str[10];
+			sprintf(i_str, "@%d", i);
+			strcpy(idf_array, $1);
+			strcat(idf_array, i_str);
+			insert(idf_array, "");
+			updateEntityType(idf_array, tempType);
+			updateEntitySize(idf_array, 0);
+			quadr("Dec", idf_array, "", "");
+		}
+	}
+  
 }
 | idf variableType {
- quadr("Dec", $1, "", "");
-} virgule list_idf {
-  updateEntityType($1, tempType);
-  updateEntitySize($1, $2);
-};
+ 	if($2 ==0){
+		//declaration normal
+		updateEntityType($1, tempType);
+		updateEntitySize($1, $2);
+		quadr("Dec", $1, "", "");
+	}else{
+		//declaration multiple
+		char idf_array[strlen($1)];
+		strcpy(idf_array, $1);
+		updateEntityType(idf_array, tempType);
+		updateEntitySize(idf_array, $2);
+		int size = $2;
+		for(int i=1; i<=size; i++){
+			char i_str[10];
+			sprintf(i_str, "@%d", i);
+			strcpy(idf_array, $1);
+			strcat(idf_array, i_str);
+			insert(idf_array, "");
+			updateEntityType(idf_array, tempType);
+			updateEntitySize(idf_array, 0);
+			quadr("Dec", idf_array, "", "");
+		}
+	}
+} virgule list_idf 
+;
 
 variableType: taille {$$ = $1;}
 | {$$ = 0;}
@@ -167,7 +242,18 @@ operation_arithmetique: expression_A {strcpy($$, $1);}
 expression_A : integer {snprintf($$, 20, "%d", $1);}
 | numeric { snprintf($$, 20, "%f", $1); }
 | character { $$[0] = $1; $$[1] = '\0'; }
-| idf {strcpy($$, getVal($1));}
+| idf variableType{
+
+	char idf_array[strlen($1)];
+	strcpy(idf_array, $1);
+	if($2 != 0){
+		char size[10];
+		sprintf(size, "@%d", $2);
+		strcat(idf_array, size);
+	}
+	
+	strcpy($$, getVal(idf_array));
+	}
 // | par_ouvr expression_A par_ferm {strcpy($$, $2);}
 ;
 
@@ -183,12 +269,22 @@ operation_logique:  operation_comparaison and_or  operation_logique {$$ = calcul
 | logical { $$ = $1; }
 ;
 
-incrementation_decrementation : idf arit_operator equal integer {
- incrementation_decrementation($1, $2, $4);
+incrementation_decrementation : idf variableType arit_operator equal integer {
+
+	char idf_array[strlen($1)];
+	strcpy(idf_array, $1);
+	if($2 != 0){
+		char size[10];
+		sprintf(size, "@%d", $2);
+		strcat(idf_array, size);
+	}
+
+
+ incrementation_decrementation(idf_array, $3, $5);
  char integer_str[20];
- sprintf(integer_str, "%d", $4);
- if($2 == '+') quadr("+", $1, integer_str, $1);
- else quadr("-", $1, integer_str, $1);
+ sprintf(integer_str, "%d", $5);
+ if($3 == '+') quadr("+", idf_array, integer_str, idf_array);
+ else quadr("-", idf_array, integer_str, idf_array);
 };
 
 loop : while_kw par_ouvr operation_logique par_ferm 
@@ -453,7 +549,6 @@ void incrementation_decrementation(char* idf, char arit_op, int entier){
 }
 
 int main(int argc, char** argv){
-	
 	char nomFichier[20];
 	printf("Veuillez entrer le nom du fichier a compiler\n");
 	scanf("%s", nomFichier);
@@ -465,8 +560,8 @@ int main(int argc, char** argv){
 	yyin = file;
     yyparse();
     printList();
-	afficher_qdr();
-	generation_code_machine();
+	//afficher_qdr();
+	//generation_code_machine();
 	return 0;
 }
 
@@ -488,9 +583,9 @@ void generation_code_machine(){
         }else   if((strcmp(quad[i].oper, "BR"))==0){
             printf("%d : JMP %s\n",i, quad[i].op1);
         }else   if((strcmp(quad[i].oper, "+"))==0){
-            printf("ADD : %s, %s",quad[i].res, quad[i].op2);
+            printf("ADD : %s, %s\n",quad[i].res, quad[i].op2);
         }else   if((strcmp(quad[i].oper, "-"))==0){
-            printf("SUB : %s, %s",quad[i].res, quad[i].op2);
+            printf("SUB : %s, %s\n",quad[i].res, quad[i].op2);
         }
 
     }

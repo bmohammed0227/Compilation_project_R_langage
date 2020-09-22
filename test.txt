@@ -16,10 +16,14 @@ FOR(i IN 1:10) {
 INTEGER Idf3 <- 2*8-((-1)*2+1)
 INTEGER Idf4, Idf5
 INTEGER Idf3
+NUMERIC Idf6 <- 6.2
 NUMERIC Tableau[20]
-Idf1 <- 2
+Tableau[1] <- 4.1
+Tableau[1] +<- 1
+Idf5 <- 2. - 1.
 Idf12 <- 2+6-(-3)
 Idf2 <- 2. + 0.1 - 0.
+Idf6 <- 2. + 0.1 - Tableau[1]
 Idf3 <- 's'
 Idf13 <- TRUE or FALSE and TRUE 
 Z <- Idf1-1
