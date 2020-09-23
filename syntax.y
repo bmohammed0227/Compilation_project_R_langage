@@ -47,6 +47,7 @@
 	void ajout_quad(int num_quad, int colon_quad, char val []);
 	void afficher_qdr();
 	void generation_code_machine();
+  char operation[200];
 %}
 %union{
 	int entier;
@@ -102,7 +103,8 @@ nouvelle_ligne : num_ligne_token {numero_ligne++;}
 |
 ;
 
-affectation : idf variableType equal operation_arithmetique_logique {
+affectation : idf variableType equal {operation[0]='\0';} operation_arithmetique_logique {
+  printf("%d Operation : %s\n",numero_ligne, operation);
 	char idf_array[strlen($1)];
 	strcpy(idf_array, $1);
 	if($2 != 0){
@@ -110,30 +112,32 @@ affectation : idf variableType equal operation_arithmetique_logique {
 		sprintf(size, "@%d", $2);
 		strcat(idf_array, size);
 	}
-	updateEntityVal(idf_array, $4);
+	updateEntityVal(idf_array, $5);
 	quadr(":=", getVal(idf_array), "", idf_array);
 }
-| type idf variableType equal operation_arithmetique_logique {
+| type idf variableType equal {operation[0]='\0';} operation_arithmetique_logique {
 
-	char idf_array[strlen($2)];
-	strcpy(idf_array, $2);
-	if($3 != 0){
-		char size[10];
-		sprintf(size, "@%d", $3);
-		strcat(idf_array, size);
+  printf("%d Operation : %s\n", numero_ligne, operation);
+  char idf_array[strlen($2)];
+  strcpy(idf_array, $2);
+  if ($3 != 0) {
+    char size[10];
+    sprintf(size, "@%d", $3);
+    strcat(idf_array, size);
 	}
 	
-	updateEntityVal(idf_array, $5);
+	updateEntityVal(idf_array, $6);
 	quadr(":=", getVal(idf_array), "", idf_array);
 }
 | idf variableType equal if_token else_token par_ouvr operation_logique virgule operation_arithmetique_logique virgule operation_arithmetique_logique par_ferm {
 
-	char idf_array[strlen($1)];
-	strcpy(idf_array, $1);
-	if($2 != 0){
-		char size[10];
-		sprintf(size, "@%d", $2);
-		strcat(idf_array, size);
+  printf("%d Operation : %s\n", numero_ligne, operation);
+  char idf_array[strlen($1)];
+  strcpy(idf_array, $1);
+  if ($2 != 0) {
+    char size[10];
+    sprintf(size, "@%d", $2);
+    strcat(idf_array, size);
 	}
 	
 	if($7==1){
@@ -145,22 +149,24 @@ affectation : idf variableType equal operation_arithmetique_logique {
 	}
 	
 }
-| type idf variableType equal if_token else_token par_ouvr operation_logique virgule operation_arithmetique_logique virgule operation_arithmetique_logique par_ferm{
+| type idf variableType equal if_token else_token par_ouvr {operation[0]='\0';} operation_logique virgule {operation[0]='\0';} operation_arithmetique_logique virgule {operation[0]='\0';} operation_arithmetique_logique par_ferm{
 
-	char idf_array[strlen($2)];
-	strcpy(idf_array, $2);
-	if($3 != 0){
-		char size[10];
-		sprintf(size, "@%d", $3);
-		strcat(idf_array, size);
+  printf("%d Operation : %s\n", numero_ligne, operation);
+  operation[0] = '\0';
+  char idf_array[strlen($2)];
+  strcpy(idf_array, $2);
+  if ($3 != 0) {
+    char size[10];
+    sprintf(size, "@%d", $3);
+    strcat(idf_array, size);
 	}
 	
-	if($8==1){
-		updateEntityVal(idf_array, $10);
-		quadr(":=", $10, "", idf_array);
-	}else{
+	if($9==1){
 		updateEntityVal(idf_array, $12);
 		quadr(":=", $12, "", idf_array);
+	}else{
+		updateEntityVal(idf_array, $15);
+		quadr(":=", $15, "", idf_array);
 	}
 }
 ;
@@ -234,14 +240,34 @@ operation_arithmetique_logique : operation_arithmetique {strcpy($$, $1);}
  }
 ;
 
-operation_arithmetique: expression_A {strcpy($$, $1);}
-|	expression_A arit_operator operation_arithmetique {calculate($$, $1, $3, $2);}
-| par_ouvr operation_arithmetique par_ferm {strcpy($$, $2);}
+operation_arithmetique: expression_A {strcat(operation, " ");strcpy($$, $1);}
+| expression_A {
+  strcat(operation, " ");
+}
+arit_operator {
+  char temp[2];
+  temp[0] = $3;
+  temp[1] = ' ';
+  strcat(operation, temp);
+} operation_arithmetique {
+  calculate($$, $1, $5, $3);
+}
+| par_ouvr {strcat(operation, "( ");} operation_arithmetique par_ferm {strcat(operation, ") ");strcpy($$, $3);}
 ;
 
-expression_A : integer {snprintf($$, 20, "%d", $1);}
-| numeric { snprintf($$, 20, "%f", $1); }
-| character { $$[0] = $1; $$[1] = '\0'; }
+expression_A : integer {
+  snprintf($$, 20, "%d", $1);
+  strcat(operation, $$);
+}
+| numeric {
+  snprintf($$, 20, "%f", $1);
+  strcat(operation, $$);
+}
+| character {
+  $$[0] = $1;
+  $$[1] = '\0';
+  strcat(operation, $$);
+}
 | idf variableType{
 
 	char idf_array[strlen($1)];
@@ -251,22 +277,52 @@ expression_A : integer {snprintf($$, 20, "%d", $1);}
 		sprintf(size, "@%d", $2);
 		strcat(idf_array, size);
 	}
-	
+	strcat(operation, idf_array);
 	strcpy($$, getVal(idf_array));
 	}
 // | par_ouvr expression_A par_ferm {strcpy($$, $2);}
 ;
 
-operation_comparaison : par_ouvr operation_arithmetique cond_operator operation_arithmetique par_ferm {
-  $$ = calculateCond($2, $4, $3);
+operation_comparaison : par_ouvr operation_arithmetique cond_operator {
+  strcat(operation, $3);
+  strcat(operation, " ");
 }
-| operation_arithmetique cond_operator operation_arithmetique {$$ = calculateCond($1, $3, $2);}
-;
+operation_arithmetique par_ferm {
+  $$ = calculateCond($2, $5, $3);
+}
+| operation_arithmetique cond_operator {
+  strcat(operation, $2);
+  strcat(operation, " ");
+}
+operation_arithmetique {
+  $$ = calculateCond($1, $4, $2);
+};
 
-operation_logique:  operation_comparaison and_or  operation_logique {$$ = calculateLogic($1, $3, $2);}
+operation_logique:  operation_comparaison and_or {
+  strcat(operation, $2);
+  strcat(operation, " ");
+} operation_logique {$$ = calculateLogic($1, $4, $2);}
 |	operation_comparaison {$$ = $1;}
-| logical and_or operation_logique { $$ = calculateLogic($1, $3, $2); }
-| logical { $$ = $1; }
+| logical {
+  if ($1 == 1)
+    strcat(operation, "TRUE");
+  else
+    strcat(operation, "FALSE");
+  strcat(operation, " ");
+}
+and_or {
+  strcat(operation, $3);
+  strcat(operation, " ");
+}
+operation_logique { $$ = calculateLogic($1, $5, $3); }
+| logical {
+  if ($1 == 1)
+    strcat(operation, "TRUE");
+  else
+    strcat(operation, "FALSE");
+  strcat(operation, " ");
+  $$ = $1;
+}
 ;
 
 incrementation_decrementation : idf variableType arit_operator equal integer {
@@ -287,13 +343,13 @@ incrementation_decrementation : idf variableType arit_operator equal integer {
  else quadr("-", idf_array, integer_str, idf_array);
 };
 
-loop : while_kw par_ouvr operation_logique par_ferm 
+loop : while_kw par_ouvr {operation[0]='\0';} operation_logique par_ferm 
 {
 	sprintf(sauv_BR_while[sauv_BR_while_indice], "%d", qc);
 	sauv_BR_while_indice++;
 	sauv_bz_while[sauv_bz_while_indice] = qc;
 	sauv_bz_while_indice++;
-	if($3 == 0)
+	if($4 == 0)
 		quadr("BZ", "FALSE", "", "");
 	else quadr("BZ", "TRUE", "", "");
 }
@@ -325,9 +381,9 @@ aco_ouvr S aco_ferm
 }
 ;
 
-if_instruction : if_token par_ouvr operation_logique par_ferm 
+if_instruction : if_token par_ouvr {operation[0]='\0';} operation_logique par_ferm 
 {
-	if($3 == 0)
+	if($4 == 0)
 		quadr("BZ", "FALSE", "", "");
 	else quadr("BZ", "TRUE", "", ""); 
 	sauv_BZ_if = qc;

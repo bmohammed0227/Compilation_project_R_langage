@@ -67,6 +67,7 @@ taille "["[1-9][0-9]*"]"
   return logical;
 };
 {cond_operator} {
+  strcpy(yylval.str, yytext);
   return cond_operator;
 };
 {arit_operator} {
@@ -141,13 +142,13 @@ void printList() {
   int i;
   printf("\n/***************Table des symboles ******************/\n");
   printf("_____________________________________________________________\n");
-  printf("\t| NomEntite |  CodeEntite \t |  TypeEntite \t |  TailleTab\n");
+  printf("\t| NomEntite |  TypeEntite \t |  TailleTab\n");
   printf("_____________________________________________________________\n");
   for(i=0; i<26; i++) {
     Symbol *var = symbolsTable[i];
 
     while (var != NULL) {
-      printf("\t|%10s |%12s  |%14c | %12d\n", var->entityName, var->entityCode,
+      printf("\t|%10s |%12s  |%14c | %12d\n", var->entityName,
              var->entityType, var->arraySize);
       var = var ->next;
     }
