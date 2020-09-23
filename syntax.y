@@ -111,7 +111,7 @@ affectation : idf variableType equal operation_arithmetique_logique {
 		strcat(idf_array, size);
 	}
 	updateEntityVal(idf_array, $4);
-	quadr(":=", idf_array, "", getVal(idf_array));
+	quadr(":=", getVal(idf_array), "", idf_array);
 }
 | type idf variableType equal operation_arithmetique_logique {
 
@@ -124,7 +124,7 @@ affectation : idf variableType equal operation_arithmetique_logique {
 	}
 	
 	updateEntityVal(idf_array, $5);
-	quadr(":=", idf_array, "", getVal(idf_array));
+	quadr(":=", getVal(idf_array), "", idf_array);
 }
 | idf variableType equal if_token else_token par_ouvr operation_logique virgule operation_arithmetique_logique virgule operation_arithmetique_logique par_ferm {
 
@@ -138,10 +138,10 @@ affectation : idf variableType equal operation_arithmetique_logique {
 	
 	if($7==1){
 		updateEntityVal(idf_array, $9);
-		quadr(":=", idf_array, "", $9);
+		quadr(":=", $9, "", idf_array);
 	}else{
 		updateEntityVal(idf_array, $11);
-		quadr(":=", idf_array, "", $11);
+		quadr(":=", $11, "", idf_array);
 	}
 	
 }
@@ -157,10 +157,10 @@ affectation : idf variableType equal operation_arithmetique_logique {
 	
 	if($8==1){
 		updateEntityVal(idf_array, $10);
-		quadr(":=", idf_array, "", $10);
+		quadr(":=", $10, "", idf_array);
 	}else{
 		updateEntityVal(idf_array, $12);
-		quadr(":=", idf_array, "", $12);
+		quadr(":=", $12, "", idf_array);
 	}
 }
 ;
@@ -294,15 +294,15 @@ loop : while_kw par_ouvr operation_logique par_ferm
 	sauv_bz_while[sauv_bz_while_indice] = qc;
 	sauv_bz_while_indice++;
 	if($3 == 0)
-		quadr("BZ", "", "FALSE", "");
-	else quadr("BZ", "", "TRUE", "");
+		quadr("BZ", "FALSE", "", "");
+	else quadr("BZ", "TRUE", "", "");
 }
 aco_ouvr S aco_ferm
 {
-	quadr("BR", sauv_BR_while[sauv_BR_while_indice-1], "", "");
+	quadr("BR", "", "", sauv_BR_while[sauv_BR_while_indice-1]);
 	sauv_BR_while_indice--;
 	sprintf(qc_char, "%d", qc);
-	ajout_quad(sauv_bz_while[sauv_bz_while_indice-1], 1, qc_char);
+	ajout_quad(sauv_bz_while[sauv_bz_while_indice-1], 3, qc_char);
 	sauv_bz_while_indice--;
 }
 | for_kw par_ouvr index_idf in_kw integer range integer par_ferm 
@@ -312,15 +312,15 @@ aco_ouvr S aco_ferm
 	sauv_bz_for[sauv_bz_for_indice] = qc;
 	sauv_bz_for_indice++;
 	if($5 == $7)
-		quadr("BZ", "", "FALSE", "");
-	else quadr("BZ", "", "TRUE", ""); 
+		quadr("BZ", "FALSE", "", "");
+	else quadr("BZ", "TRUE", "", ""); 
 }
 aco_ouvr S aco_ferm 
 {
-	quadr("BR", sauv_BR_for[sauv_BR_for_indice-1], "", "");
+	quadr("BR", "", "", sauv_BR_for[sauv_BR_for_indice-1]);
 	sauv_BR_for_indice--;
 	sprintf(qc_char, "%d", qc);
-	ajout_quad(sauv_bz_for[sauv_bz_for_indice-1], 1, qc_char);
+	ajout_quad(sauv_bz_for[sauv_bz_for_indice-1], 3, qc_char);
 	sauv_bz_for_indice--;
 }
 ;
@@ -328,8 +328,8 @@ aco_ouvr S aco_ferm
 if_instruction : if_token par_ouvr operation_logique par_ferm 
 {
 	if($3 == 0)
-		quadr("BZ", "", "FALSE", "");
-	else quadr("BZ", "", "TRUE", ""); 
+		quadr("BZ", "FALSE", "", "");
+	else quadr("BZ", "TRUE", "", ""); 
 	sauv_BZ_if = qc;
 }
 aco_ouvr S aco_ferm ELSE 
@@ -340,12 +340,12 @@ ELSE : else_token
 	sauv_BR_if[sauv_BR_if_indice] = qc;
 	sauv_BR_if_indice++;
 	sprintf(qc_char, "%d", qc);
-	ajout_quad(sauv_BZ_if-1, 1, qc_char);
+	ajout_quad(sauv_BZ_if-1, 3, qc_char);
 }
  if_instruction {
 	sprintf(qc_char, "%d", qc);
 	for(int i=0; i<=sauv_BR_if_indice; i++){
-		ajout_quad(sauv_BR_if[i]-1, 1, qc_char);
+		ajout_quad(sauv_BR_if[i]-1, 3, qc_char);
 	}
 	sauv_BR_if_indice = 0;
 }
@@ -354,18 +354,18 @@ ELSE : else_token
 	sauv_BR_if[sauv_BR_if_indice] = qc;
 	sauv_BR_if_indice++;
 	sprintf(qc_char, "%d", qc);
-	ajout_quad(sauv_BZ_if-1, 1, qc_char);
+	ajout_quad(sauv_BZ_if-1, 3, qc_char);
 }
  aco_ouvr S aco_ferm {
 	sprintf(qc_char, "%d", qc);
 	for(int i=0; i<=sauv_BR_if_indice; i++){
-		ajout_quad(sauv_BR_if[i]-1, 1, qc_char);
+		ajout_quad(sauv_BR_if[i]-1, 3, qc_char);
 	}
 	sauv_BR_if_indice = 0;
 }
 | {
 	sprintf(qc_char, "%d", qc);
-	ajout_quad(sauv_BZ_if-1, 1, qc_char);
+	ajout_quad(sauv_BZ_if-1, 3, qc_char);
 	sauv_BR_if_indice = 0;
 }
 
@@ -560,35 +560,12 @@ int main(int argc, char** argv){
 	yyin = file;
     yyparse();
     printList();
-	//afficher_qdr();
-	//generation_code_machine();
+	afficher_qdr();
+	generation_code_machine();
 	return 0;
 }
 
 int yywrap(){
-}
-
-
-void generation_code_machine(){
-	printf("Generation du code machine :\n");
-	printf("______________________________________\n");
-	for(int i=0; i<qc; i++){
-        if((strcmp(quad[i].oper, ":="))==0){
-            printf("MOV %s, %s\n",quad[i].op1, quad[i].res);
-        }else   if((strcmp(quad[i].oper, "Dec"))==0){
-            printf("%s EQU %d\n",quad[i].op1, 0);
-        }else   if((strcmp(quad[i].oper, "BZ"))==0){
-            printf("%d : CMP %s, 0\n",i, quad[i].op2);
-            printf("JE label %s\n", quad[i].op1);
-        }else   if((strcmp(quad[i].oper, "BR"))==0){
-            printf("%d : JMP %s\n",i, quad[i].op1);
-        }else   if((strcmp(quad[i].oper, "+"))==0){
-            printf("ADD : %s, %s\n",quad[i].res, quad[i].op2);
-        }else   if((strcmp(quad[i].oper, "-"))==0){
-            printf("SUB : %s, %s\n",quad[i].res, quad[i].op2);
-        }
-
-    }
 }
 
 void yyerror(char* msg){
@@ -634,5 +611,138 @@ printf("\n %d - ( %s  ,  %s  ,  %s  ,  %s )",i,quad[i].oper,quad[i].op1,quad[i].
 printf("\n---------------------------------------------------\n");
 
 }
+}
+
+int label(int num){
+    char str_num[10];
+    sprintf(str_num, "%d", num);
+    for(int i=1; i<=qc; i++){
+        if (strcmp(quad[i].oper, "BR")==0 && strcmp(quad[i].res, str_num)==0){
+            return 1;
+        }
+    }
+    return 0;
+}
+
+int isIdf(char* str){
+    if(str[0] == 'A' || str[0] == 'B' || str[0] == 'C' || str[0] == 'D' ||
+       str[0] == 'E' || str[0] == 'F' || str[0] == 'G' || str[0] == 'H' ||
+       str[0] == 'I' || str[0] == 'J' || str[0] == 'K' || str[0] == 'L' ||
+       str[0] == 'M' || str[0] == 'N' || str[0] == 'O' || str[0] == 'P' ||
+       str[0] == 'Q' || str[0] == 'R' || str[0] == 'S' || str[0] == 'T' ||
+       str[0] == 'U' || str[0] == 'V' || str[0] == 'W' || str[0] == 'X' ||
+       str[0] == 'Y' || str[0] == 'Z')
+        return 1;
+    return 0;
+}
+
+
+
+void generation_code_machine(){
+    int type_branchement;
+    FILE* f = fopen("code_machine.asm", "w");
+    fprintf(f, "TITLE code_machine.asm: R language compiler \n");
+    fprintf(f, "CODE segment\n");
+    fprintf(f, "MAIN:\n");
+    fprintf(f, "ASSUME CS:CODE, DS:DATA, SS:Pile\n");
+    for(int i=1; i<=qc; i++){
+    if(label(i)==1){
+        fprintf(f,"Label_%d: ",i);
+    }
+    if((strcmp(quad[i].oper, "Dec"))==0){
+        fprintf(f, "%s DW ?\n",quad[i].op1);
+    }else   if((strcmp(quad[i].oper, ":="))==0){
+        if(isIdf(quad[i].op1)==1){
+            fprintf(f, "MOV AX, %s\n",quad[i].op1);
+            fprintf(f, "MOV %s, AX\n",quad[i].res);
+        }
+        else{
+            fprintf(f, "MOV %s, %s\n",quad[i].res, quad[i].op1);
+        }
+    }else   if((strcmp(quad[i].oper, ">"))==0){
+                type_branchement = 4;
+                fprintf(f,"MOV AX, %s\n",quad[i].op1);
+                fprintf(f,"CMP AX, %s\n",quad[i].op2);
+    }else   if((strcmp(quad[i].oper, "<"))==0){
+                type_branchement = 3;
+                fprintf(f,"MOV AX, %s\n",quad[i].op1);
+                fprintf(f,"CMP AX, %s\n",quad[i].op2);
+    }else   if((strcmp(quad[i].oper, "=="))==0){
+                type_branchement = 5;
+                fprintf(f,"MOV AX, %s\n",quad[i].op1);
+                fprintf(f,"CMP AX, %s\n",quad[i].op2);
+    }else   if((strcmp(quad[i].oper, ">="))==0){
+                type_branchement = 1;
+                fprintf(f,"MOV AX, %s\n",quad[i].op1);
+                fprintf(f,"CMP AX, %s\n",quad[i].op2);
+    }else   if((strcmp(quad[i].oper, "<="))==0){
+                type_branchement = 0;
+                fprintf(f,"MOV AX, %s\n",quad[i].op1);
+                fprintf(f,"CMP AX, %s\n",quad[i].op2);
+    }else   if((strcmp(quad[i].oper, "!="))==0){
+                type_branchement = 2;
+                fprintf(f,"MOV AX, %s\n",quad[i].op1);
+                fprintf(f,"CMP AX, %s\n",quad[i].op2);
+    }else   if((strcmp(quad[i].oper, "+"))==0){
+                fprintf(f, "MOV AX, %s\n",quad[i].op1);
+                fprintf(f, "ADD AX, %s\n",quad[i].op2);
+                fprintf(f, "MOV %s, AX\n",quad[i].res);
+    }else   if((strcmp(quad[i].oper, "-"))==0){
+                fprintf(f, "MOV AX, %s\n",quad[i].op1);
+                fprintf(f, "SUB AX, %s\n",quad[i].op2);
+                fprintf(f, "MOV %s, AX\n",quad[i].res);
+    }else   if((strcmp(quad[i].oper, "*"))==0){
+                fprintf(f, "MOV AX, %s\n",quad[i].op1);
+                fprintf(f, "MOV BX, %s\n",quad[i].op2);
+                fprintf(f, "MUL AX\n");
+                fprintf(f, "MOV %s, AX\n",quad[i].res);
+    }else   if((strcmp(quad[i].oper, "/"))==0){
+                fprintf(f, "MOV AX, %s\n",quad[i].op1);
+                fprintf(f, "MOV BX, %s\n",quad[i].op2);
+                fprintf(f, "DIV AX\n");
+                fprintf(f, "MOV %s, AX\n",quad[i].res);
+    }else   if((strcmp(quad[i].oper, "%"))==0){// ********
+                fprintf(f, "MOV AX, %s\n",quad[i].op1);
+                fprintf(f, "MOV BX, %s\n",quad[i].op2);
+                fprintf(f, "DIV AX\n");
+                fprintf(f, "MOV %s, DX\n",quad[i].res);
+    }else   if((strcmp(quad[i].oper, "BZ"))==0){
+                fprintf(f, "CMP %s, 0\n",quad[i].op1);
+                fprintf(f, "JE label_%s\n", quad[i].res);
+    }else   if((strcmp(quad[i].oper, "BR"))==0){
+                switch(type_branchement){
+                    case 0: {
+                        fprintf(f, "JA Label_%s\n",quad[i].res);
+                    }
+                    break;
+                    case 1: {
+                       fprintf(f, "JL Label_%s\n",quad[i].res);
+                    }
+                    break;
+                    case 2: {
+                        fprintf(f, "JE Label_%s\n",quad[i].res);
+                    }
+                    break;
+                    case 3: {
+                        fprintf(f, "JAE Label_%s\n",quad[i].res);
+                    }
+                    break;
+                    case 4: {
+                        fprintf(f, "JLE Label_%s\n",quad[i].res);
+                    }
+                    break;
+                    case 5: {
+                        fprintf(f, "JNE Label_%s\n",quad[i].res);
+                    }
+                    break;
+                    case 6: {
+                        fprintf(f, "JMP Label_%s\n",quad[i].res);
+                    }
+                    break;
+                }
+                    type_branchement = 6;
+            }
+    }
+    fflush(f);
 }
 
