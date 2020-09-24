@@ -35,7 +35,7 @@
 	int calculateCond(char *a, char *b, char *op);
 	void incrementation_decrementation(char* idf, char arit_op, int entier);
 	qdr quad[1000];
-	int qc=0;
+	int qc=1;
 	int sauv_BZ_if;
 	int sauv_BR_if[20];
 	int sauv_BR_if_indice = 0;
@@ -54,6 +54,7 @@
 	void generation_code_machine();
   char operation[200];
   char postfixExp[200];
+  char idf_final_value[100];
 %}
 %union{
 	int entier;
@@ -118,7 +119,7 @@ affectation : idf variableType equal {operation[0]='\0';} operation_arithmetique
 		strcat(idf_array, size);
 	}
 	updateEntityVal(idf_array, $5);
-	quadr(":=", getVal(idf_array), "", idf_array);
+	quadr(":=", strdup(idf_final_value), "", idf_array);
 }
 | type idf variableType equal {operation[0]='\0';} operation_arithmetique_logique {
   char idf_array[strlen($2)];
@@ -130,7 +131,8 @@ affectation : idf variableType equal {operation[0]='\0';} operation_arithmetique
 	}
 	
 	updateEntityVal(idf_array, $6);
-	quadr(":=", getVal(idf_array), "", idf_array);
+	printf("\n%s, %s\n", $2,idf_final_value);
+	quadr(":=", strdup(idf_final_value), "", idf_array);
 }
 | idf variableType equal if_token else_token par_ouvr operation_logique virgule operation_arithmetique_logique virgule operation_arithmetique_logique par_ferm {
   char idf_array[strlen($1)];
@@ -143,10 +145,10 @@ affectation : idf variableType equal {operation[0]='\0';} operation_arithmetique
 	
 	if($7==1){
 		updateEntityVal(idf_array, $9);
-		quadr(":=", $9, "", idf_array);
+		quadr(":=", strdup(idf_final_value), "", idf_array);
 	}else{
 		updateEntityVal(idf_array, $11);
-		quadr(":=", $11, "", idf_array);
+		quadr(":=", strdup(idf_final_value), "", idf_array);
 	}
 	
 }
@@ -163,10 +165,10 @@ affectation : idf variableType equal {operation[0]='\0';} operation_arithmetique
 	
 	if($9==1){
 		updateEntityVal(idf_array, $12);
-		quadr(":=", $12, "", idf_array);
+		quadr(":=", strdup(idf_final_value), "", idf_array);
 	}else{
 		updateEntityVal(idf_array, $15);
-		quadr(":=", $15, "", idf_array);
+		quadr(":=", strdup(idf_final_value), "", idf_array);
 	}
 }
 ;
@@ -235,11 +237,16 @@ operation_arithmetique_logique : operation_arithmetique {
   postfixExp[0] = '\0';
   infixToPostfix(postfixExp, operation);
   postfixToQuadruple(postfixExp);
-  strcpy($$, quad[qc-1].res);}
+  if(strcmp(quad[qc-1].res, "")!=0)
+		strcpy(idf_final_value, quad[qc-1].res);
+  //strcpy($$, quad[qc-1].res);
+  }
 | operation_logique {
   postfixExp[0] = '\0';
   infixToPostfix(postfixExp, operation);
   postfixToQuadruple(postfixExp);
+  if(strcmp(quad[qc-1].res, "")!=0)
+		strcpy(idf_final_value, quad[qc-1].res);
   /* strcpy($$, quad[qc].op1); */
   if ($1 == 1)
     strcpy($$, "TRUE");
@@ -710,9 +717,12 @@ int postfixToQuadruple(char *exp) {
     Pile* pile = initialiser();
     char* token = strtok(exp, " ");
     int j = 1;
+	int i = 0;
     while(token != NULL){
-        if(opr(token)==1)
-            empiler(pile, token);
+        if(opr(token)==1){
+			empiler(pile, token);
+			i++;
+		}  
         else{
             char* opr = token;
             char* op1 = depiler(pile);
@@ -728,6 +738,8 @@ int postfixToQuadruple(char *exp) {
         }
         token = strtok(NULL, " ");
     }
+	if(i==1)
+		strcpy(idf_final_value, strdup(depiler(pile)));
     return 0;
 }
 
