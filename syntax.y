@@ -2,9 +2,12 @@
 	#include <stdio.h>
 	#include <stdlib.h>
 	#include <string.h>
-	#include<stdbool.h>
+	#include <stdbool.h>
 	#include "symbol_table.h"
 	#include "quadruplet.h"
+  #include "pile.h"
+  #include "stack.h"
+  #include "infixToPostfix.h"
 	char sauvType[20];
 	extern int yylex();
 	extern int yyparse();
@@ -18,6 +21,8 @@
 	extern char tempType;
 	extern char* getVal(char* idf);
 	extern char getType(char* idf);
+  extern int infixToPostfix(char* res, char* exp);
+  int postfixToQuadruple(char *exp);
 	void setVal(char idf[], char* val);
 	void yyerror(char *msg);
 	void updateEntityVal(char* idf, char* val);
@@ -48,6 +53,7 @@
 	void afficher_qdr();
 	void generation_code_machine();
   char operation[200];
+  char postfixExp[200];
 %}
 %union{
 	int entier;
@@ -104,7 +110,6 @@ nouvelle_ligne : num_ligne_token {numero_ligne++;}
 ;
 
 affectation : idf variableType equal {operation[0]='\0';} operation_arithmetique_logique {
-  printf("%d Operation : %s\n",numero_ligne, operation);
 	char idf_array[strlen($1)];
 	strcpy(idf_array, $1);
 	if($2 != 0){
@@ -116,8 +121,6 @@ affectation : idf variableType equal {operation[0]='\0';} operation_arithmetique
 	quadr(":=", getVal(idf_array), "", idf_array);
 }
 | type idf variableType equal {operation[0]='\0';} operation_arithmetique_logique {
-
-  printf("%d Operation : %s\n", numero_ligne, operation);
   char idf_array[strlen($2)];
   strcpy(idf_array, $2);
   if ($3 != 0) {
@@ -130,8 +133,6 @@ affectation : idf variableType equal {operation[0]='\0';} operation_arithmetique
 	quadr(":=", getVal(idf_array), "", idf_array);
 }
 | idf variableType equal if_token else_token par_ouvr operation_logique virgule operation_arithmetique_logique virgule operation_arithmetique_logique par_ferm {
-
-  printf("%d Operation : %s\n", numero_ligne, operation);
   char idf_array[strlen($1)];
   strcpy(idf_array, $1);
   if ($2 != 0) {
@@ -152,7 +153,6 @@ affectation : idf variableType equal {operation[0]='\0';} operation_arithmetique
 | type idf variableType equal if_token else_token par_ouvr {operation[0]='\0';} operation_logique virgule {operation[0]='\0';} operation_arithmetique_logique virgule {operation[0]='\0';} operation_arithmetique_logique par_ferm{
 
   printf("%d Operation : %s\n", numero_ligne, operation);
-  operation[0] = '\0';
   char idf_array[strlen($2)];
   strcpy(idf_array, $2);
   if ($3 != 0) {
@@ -231,8 +231,16 @@ variableType: taille {$$ = $1;}
 | {$$ = 0;}
 ;
 
-operation_arithmetique_logique : operation_arithmetique {strcpy($$, $1);}
+operation_arithmetique_logique : operation_arithmetique {
+  postfixExp[0] = '\0';
+  infixToPostfix(postfixExp, operation);
+  postfixToQuadruple(postfixExp);
+  strcpy($$, quad[qc-1].res);}
 | operation_logique {
+  postfixExp[0] = '\0';
+  infixToPostfix(postfixExp, operation);
+  postfixToQuadruple(postfixExp);
+  /* strcpy($$, quad[qc].op1); */
   if ($1 == 1)
     strcpy($$, "TRUE");
   else
@@ -615,7 +623,7 @@ int main(int argc, char** argv){
 	}
 	yyin = file;
     yyparse();
-    printList();
+    /* printList(); */
 	afficher_qdr();
 	generation_code_machine();
 	return 0;
@@ -692,7 +700,36 @@ int isIdf(char* str){
     return 0;
 }
 
+int opr(char* token){
+    if(strcmp(token, "+")==0 || strcmp(token, "-")==0 || strcmp(token, "*")==0 || strcmp(token, "/")==0 )
+        return 0;
+    return 1;
+}
 
+int postfixToQuadruple(char *exp) {
+    Pile* pile = initialiser();
+    char* token = strtok(exp, " ");
+    int j = 1;
+    while(token != NULL){
+        if(opr(token)==1)
+            empiler(pile, token);
+        else{
+            char* opr = token;
+            char* op1 = depiler(pile);
+            char* op2 = depiler(pile);
+            char str_j[10];
+            sprintf(str_j,"%d", j);
+            char temp[] = "t";
+            strcat(temp, str_j);
+            quadr("Dec", temp, "", "");
+            quadr(opr, op1, op2, temp);
+            empiler(pile, strdup(temp));
+            j++;
+        }
+        token = strtok(NULL, " ");
+    }
+    return 0;
+}
 
 void generation_code_machine(){
     int type_branchement;
