@@ -708,7 +708,9 @@ int isIdf(char* str){
 }
 
 int opr(char* token){
-    if(strcmp(token, "+")==0 || strcmp(token, "-")==0 || strcmp(token, "*")==0 || strcmp(token, "/")==0 )
+    if(strcmp(token, "+")==0 || strcmp(token, "-")==0 || strcmp(token, "*")==0 || strcmp(token, "/")==0
+       || strcmp(token, "=")==0 || strcmp(token, "!=")==0 || token[0]=='>' || token[0]=='<'
+       || token[0]=='a' || token[0]=='o')
         return 0;
     return 1;
 }
@@ -728,13 +730,81 @@ int postfixToQuadruple(char *exp) {
             char* op1 = depiler(pile);
             char* op2 = depiler(pile);
             char str_j[10];
+            char str_qc[10];
             sprintf(str_j,"%d", j);
-            char temp[] = "t";
+            char temp[3] = "t";
             strcat(temp, str_j);
-            quadr("Dec", temp, "", "");
-            quadr(opr, op1, op2, temp);
-            empiler(pile, strdup(temp));
             j++;
+            quadr("Dec", temp, "", "");
+            if(strcmp(token, "+")==0 || strcmp(token, "-")==0 || strcmp(token, "*")==0 || strcmp(token, "/")==0) {
+              quadr(opr, op1, op2, temp);
+              empiler(pile, strdup(temp));
+            }
+            else if(strcmp(token, "and")==0 || strcmp(token, "or")==0) {
+              if (strcmp(token, "or") == 0) {
+                sprintf(str_qc,"%d", qc+4);
+                quadr("BNZ", op1, "", str_qc);
+                sprintf(str_qc,"%d", qc+3);
+                quadr("BNZ", op2, "", str_qc);
+                quadr(":=", "FALSE", "", temp);
+                sprintf(str_qc,"%d", qc+2);
+                quadr("BR", "", "", str_qc);
+                quadr(":=", "TRUE", "", temp);
+              }
+              else if (strcmp(token, "and") == 0) {
+                sprintf(str_qc,"%d", qc+4);
+                quadr("BZ", op1, "", str_qc);
+                sprintf(str_qc,"%d", qc+3);
+                quadr("BZ", op2, "", str_qc);
+                quadr(":=", "TRUE", "", temp);
+                sprintf(str_qc,"%d", qc+2);
+                quadr("BR", "", "", str_qc);
+                quadr(":=", "FALSE", "", temp);
+              }
+              empiler(pile, strdup(temp));
+            }
+            else {
+              char temp2[3] = "t";
+              sprintf(str_j,"%d", j);
+              strcat(temp2, str_j);
+              j++;
+              quadr("Dec", temp2, "", "");
+              if (strcmp(token, "=") == 0) {
+                quadr("-", op1, op2, temp);
+                sprintf(str_qc,"%d", qc+3);
+                quadr("BZ", temp, "", str_qc);
+              }
+              else if (strcmp(token, "!=") == 0) {
+                quadr("-", op1, op2, temp);
+                sprintf(str_qc,"%d", qc+3);
+                quadr("BNZ", temp, "", str_qc);
+              }
+              else if (strcmp(token, ">") == 0) {
+                quadr("-", op1, op2, temp);
+                sprintf(str_qc,"%d", qc+3);
+                quadr("BP", temp, "", str_qc);
+              }
+              else if (strcmp(token, ">=") == 0) {
+                quadr("-", op1, op2, temp);
+                sprintf(str_qc,"%d", qc+3);
+                quadr("BPZ", temp, "", str_qc);
+              }
+              else if (strcmp(token, "<") == 0) {
+                quadr("-", op1, op2, temp);
+                sprintf(str_qc,"%d", qc+3);
+                quadr("BNZ", temp, "", str_qc);
+              }
+              else if (strcmp(token, "<=") == 0) {
+                quadr("-", op1, op2, temp);
+                sprintf(str_qc,"%d", qc+3);
+                quadr("BM", temp, "", str_qc);
+              }
+              quadr(":=", "FALSE", "", temp2);
+              sprintf(str_qc,"%d", qc+2);
+              quadr("BR", "", "", str_qc);
+              quadr(":=", "TRUE", "", temp2);
+              empiler(pile, strdup(temp2));
+            }
         }
         token = strtok(NULL, " ");
     }
