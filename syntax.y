@@ -246,8 +246,8 @@ variableType: taille {$$ = $1;}
 operation_arithmetique_logique : operation_arithmetique {
   postfixExp[0] = '\0';
   infixToPostfix(postfixExp, operation);
-  postfixToQuadruple(postfixExp);
-  if(strcmp(quad[qc-1].res, "")!=0)
+  
+  if(postfixToQuadruple(postfixExp)!=1)
 		strcpy(idf_final_value, quad[qc-1].res);
   //strcpy($$, quad[qc-1].res);
   }
@@ -255,7 +255,7 @@ operation_arithmetique_logique : operation_arithmetique {
   postfixExp[0] = '\0';
   infixToPostfix(postfixExp, operation);
   postfixToQuadruple(postfixExp);
-  if(strcmp(quad[qc-1].res, "")!=0)
+  if(postfixToQuadruple(postfixExp)!=1)
 		strcpy(idf_final_value, quad[qc-1].res);
   /* strcpy($$, quad[qc].op1); */
   if ($1 == 1)
@@ -379,7 +379,7 @@ operation_logique par_ferm
 	postfixExp[0] = '\0';
 	infixToPostfix(postfixExp, operation);
 	postfixToQuadruple(postfixExp);
-	if(strcmp(quad[qc-1].res, "")!=0)
+	if(postfixToQuadruple(postfixExp)!=1)
 	strcpy(idf_final_value, quad[qc-1].res);
 	
 	sauv_bz_while[sauv_bz_while_indice] = qc;
@@ -424,7 +424,7 @@ if_instruction : if_token par_ouvr {operation[0]='\0';} operation_logique par_fe
 	postfixExp[0] = '\0';
 	infixToPostfix(postfixExp, operation);
 	postfixToQuadruple(postfixExp);
-	if(strcmp(quad[qc-1].res, "")!=0)
+	if(postfixToQuadruple(postfixExp)!=1)
 		strcpy(idf_final_value, quad[qc-1].res);
 	quadr("BZ", quad[qc-1].res, "", ""); 
 	sauv_BZ_if = qc;
@@ -773,7 +773,7 @@ int postfixToQuadruple(char *exp) {
     }
 	if(i==1)
 		strcpy(idf_final_value, strdup(depiler(pile)));
-    return 0;
+    return i;
 }
 
 void generation_code_machine(){
