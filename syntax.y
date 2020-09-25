@@ -55,6 +55,7 @@
   char operation[200];
   char postfixExp[200];
   char idf_final_value[100];
+  int temp_indice = 0;
 %}
 %union{
 	int entier;
@@ -103,6 +104,7 @@ S : S affectation  nouvelle_ligne
 | S incrementation_decrementation nouvelle_ligne
 | S loop nouvelle_ligne
 | S if_instruction nouvelle_ligne
+| S nouvelle_ligne
 | nouvelle_ligne
 ;
 
@@ -111,6 +113,10 @@ nouvelle_ligne : num_ligne_token {numero_ligne++;}
 ;
 
 affectation : idf variableType equal {operation[0]='\0';} operation_arithmetique_logique {
+	char typeIdf = getType($1);
+	if(typeIdf == ' ') {
+		quadr("Dec", $1, "", "");
+	}
 	char idf_array[strlen($1)];
 	strcpy(idf_array, $1);
 	if($2 != 0){
@@ -122,6 +128,10 @@ affectation : idf variableType equal {operation[0]='\0';} operation_arithmetique
 	quadr(":=", strdup(idf_final_value), "", idf_array);
 }
 | type idf variableType equal {operation[0]='\0';} operation_arithmetique_logique {
+	char typeIdf = getType($2);
+	if(typeIdf == ' ') {
+		quadr("Dec", $2, "", "");
+	}
   char idf_array[strlen($2)];
   strcpy(idf_array, $2);
   if ($3 != 0) {
@@ -153,7 +163,7 @@ affectation : idf variableType equal {operation[0]='\0';} operation_arithmetique
 	
 }
 | type idf variableType equal if_token else_token par_ouvr {operation[0]='\0';} operation_logique virgule {operation[0]='\0';} operation_arithmetique_logique virgule {operation[0]='\0';} operation_arithmetique_logique par_ferm{
-
+	
   printf("%d Operation : %s\n", numero_ligne, operation);
   char idf_array[strlen($2)];
   strcpy(idf_array, $2);
@@ -358,15 +368,23 @@ incrementation_decrementation : idf variableType arit_operator equal integer {
  else quadr("-", idf_array, integer_str, idf_array);
 };
 
-loop : while_kw par_ouvr {operation[0]='\0';} operation_logique par_ferm 
+loop : while_kw par_ouvr 
 {
-	sprintf(sauv_BR_while[sauv_BR_while_indice], "%d", qc);
-	sauv_BR_while_indice++;
+operation[0]='\0'; 
+sprintf(sauv_BR_while[sauv_BR_while_indice], "%d", qc);
+sauv_BR_while_indice++;
+} 
+operation_logique par_ferm 
+{
+	postfixExp[0] = '\0';
+	infixToPostfix(postfixExp, operation);
+	postfixToQuadruple(postfixExp);
+	if(strcmp(quad[qc-1].res, "")!=0)
+	strcpy(idf_final_value, quad[qc-1].res);
+	
 	sauv_bz_while[sauv_bz_while_indice] = qc;
 	sauv_bz_while_indice++;
-	if($4 == 0)
-		quadr("BZ", "FALSE", "", "");
-	else quadr("BZ", "TRUE", "", "");
+	quadr("BZ", quad[qc-1].res, "", "");
 }
 aco_ouvr S aco_ferm
 {
@@ -378,29 +396,37 @@ aco_ouvr S aco_ferm
 }
 | for_kw par_ouvr index_idf in_kw integer range integer par_ferm 
 {
-	sprintf(sauv_BR_for[sauv_BR_for_indice], "%d", qc);
+	sprintf(sauv_BR_for[sauv_BR_for_indice], "%d", qc+1);
 	sauv_BR_for_indice++;
 	sauv_bz_for[sauv_bz_for_indice] = qc;
 	sauv_bz_for_indice++;
-	if($5 == $7)
-		quadr("BZ", "FALSE", "", "");
-	else quadr("BZ", "TRUE", "", ""); 
+	char str_int1[10];
+	sprintf(str_int1, "%d", $5);
+	char str_int2[10];
+	sprintf(str_int2, "%d", $7);
+	quadr(":=", str_int1, "", $3);
+	quadr("<", $3, str_int2, "cond");
+	quadr("BZ", "cond", "", "");
 }
 aco_ouvr S aco_ferm 
 {
+	quadr("+", "1", $3, $3);
 	quadr("BR", "", "", sauv_BR_for[sauv_BR_for_indice-1]);
 	sauv_BR_for_indice--;
 	sprintf(qc_char, "%d", qc);
-	ajout_quad(sauv_bz_for[sauv_bz_for_indice-1], 3, qc_char);
+	ajout_quad(sauv_bz_for[sauv_bz_for_indice-1]+2, 3, qc_char);
 	sauv_bz_for_indice--;
 }
 ;
 
 if_instruction : if_token par_ouvr {operation[0]='\0';} operation_logique par_ferm 
 {
-	if($4 == 0)
-		quadr("BZ", "FALSE", "", "");
-	else quadr("BZ", "TRUE", "", ""); 
+	postfixExp[0] = '\0';
+	infixToPostfix(postfixExp, operation);
+	postfixToQuadruple(postfixExp);
+	if(strcmp(quad[qc-1].res, "")!=0)
+		strcpy(idf_final_value, quad[qc-1].res);
+	quadr("BZ", quad[qc-1].res, "", ""); 
 	sauv_BZ_if = qc;
 }
 aco_ouvr S aco_ferm ELSE 
@@ -410,7 +436,7 @@ ELSE : else_token
 	quadr("BR", "", "", "");
 	sauv_BR_if[sauv_BR_if_indice] = qc;
 	sauv_BR_if_indice++;
-	sprintf(qc_char, "%d", qc);
+	sprintf(qc_char, "%d", qc+1);
 	ajout_quad(sauv_BZ_if-1, 3, qc_char);
 }
  if_instruction {
@@ -709,7 +735,7 @@ int isIdf(char* str){
 
 int opr(char* token){
     if(strcmp(token, "+")==0 || strcmp(token, "-")==0 || strcmp(token, "*")==0 || strcmp(token, "/")==0
-       || strcmp(token, "=")==0 || strcmp(token, "!=")==0 || token[0]=='>' || token[0]=='<'
+       || strcmp(token, "==")==0 || strcmp(token, "!=")==0 || token[0]=='>' || token[0]=='<'
        || token[0]=='a' || token[0]=='o')
         return 0;
     return 1;
@@ -721,6 +747,7 @@ int postfixToQuadruple(char *exp) {
     int j = 1;
 	int i = 0;
     while(token != NULL){
+		printf("t => %d, temp_ind => %d\n", j, temp_indice);
         if(opr(token)==1){
 			empiler(pile, token);
 			i++;
@@ -732,79 +759,15 @@ int postfixToQuadruple(char *exp) {
             char str_j[10];
             char str_qc[10];
             sprintf(str_j,"%d", j);
-            char temp[3] = "t";
+            char temp[3] = "T";
             strcat(temp, str_j);
-            j++;
-            quadr("Dec", temp, "", "");
-            if(strcmp(token, "+")==0 || strcmp(token, "-")==0 || strcmp(token, "*")==0 || strcmp(token, "/")==0) {
-              quadr(opr, op1, op2, temp);
+			if(j>temp_indice){
+				quadr("Dec", temp, "", "");
+				temp_indice++;
+			}
+			j++;
+              quadr(opr, op2, op1, temp);
               empiler(pile, strdup(temp));
-            }
-            else if(strcmp(token, "and")==0 || strcmp(token, "or")==0) {
-              if (strcmp(token, "or") == 0) {
-                sprintf(str_qc,"%d", qc+4);
-                quadr("BNZ", op1, "", str_qc);
-                sprintf(str_qc,"%d", qc+3);
-                quadr("BNZ", op2, "", str_qc);
-                quadr(":=", "FALSE", "", temp);
-                sprintf(str_qc,"%d", qc+2);
-                quadr("BR", "", "", str_qc);
-                quadr(":=", "TRUE", "", temp);
-              }
-              else if (strcmp(token, "and") == 0) {
-                sprintf(str_qc,"%d", qc+4);
-                quadr("BZ", op1, "", str_qc);
-                sprintf(str_qc,"%d", qc+3);
-                quadr("BZ", op2, "", str_qc);
-                quadr(":=", "TRUE", "", temp);
-                sprintf(str_qc,"%d", qc+2);
-                quadr("BR", "", "", str_qc);
-                quadr(":=", "FALSE", "", temp);
-              }
-              empiler(pile, strdup(temp));
-            }
-            else {
-              char temp2[3] = "t";
-              sprintf(str_j,"%d", j);
-              strcat(temp2, str_j);
-              j++;
-              quadr("Dec", temp2, "", "");
-              if (strcmp(token, "=") == 0) {
-                quadr("-", op1, op2, temp);
-                sprintf(str_qc,"%d", qc+3);
-                quadr("BZ", temp, "", str_qc);
-              }
-              else if (strcmp(token, "!=") == 0) {
-                quadr("-", op1, op2, temp);
-                sprintf(str_qc,"%d", qc+3);
-                quadr("BNZ", temp, "", str_qc);
-              }
-              else if (strcmp(token, ">") == 0) {
-                quadr("-", op1, op2, temp);
-                sprintf(str_qc,"%d", qc+3);
-                quadr("BP", temp, "", str_qc);
-              }
-              else if (strcmp(token, ">=") == 0) {
-                quadr("-", op1, op2, temp);
-                sprintf(str_qc,"%d", qc+3);
-                quadr("BPZ", temp, "", str_qc);
-              }
-              else if (strcmp(token, "<") == 0) {
-                quadr("-", op1, op2, temp);
-                sprintf(str_qc,"%d", qc+3);
-                quadr("BNZ", temp, "", str_qc);
-              }
-              else if (strcmp(token, "<=") == 0) {
-                quadr("-", op1, op2, temp);
-                sprintf(str_qc,"%d", qc+3);
-                quadr("BM", temp, "", str_qc);
-              }
-              quadr(":=", "FALSE", "", temp2);
-              sprintf(str_qc,"%d", qc+2);
-              quadr("BR", "", "", str_qc);
-              quadr(":=", "TRUE", "", temp2);
-              empiler(pile, strdup(temp2));
-            }
         }
         token = strtok(NULL, " ");
     }
@@ -821,6 +784,7 @@ void generation_code_machine(){
     fprintf(f, "MAIN:\n");
     fprintf(f, "ASSUME CS:CODE, DS:DATA, SS:Pile\n");
     for(int i=1; i<=qc; i++){
+	//fprintf(f, "\n\n%d\n", i);
     if(label(i)==1){
         fprintf(f,"Label_%d: ",i);
     }
@@ -882,8 +846,18 @@ void generation_code_machine(){
                 fprintf(f, "DIV AX\n");
                 fprintf(f, "MOV %s, DX\n",quad[i].res);
     }else   if((strcmp(quad[i].oper, "BZ"))==0){
-                fprintf(f, "CMP %s, 0\n",quad[i].op1);
+				fprintf(f, "CMP %s, 0\n",quad[i].op1);
                 fprintf(f, "JE label_%s\n", quad[i].res);
+	}else   if((strcmp(quad[i].oper, "and"))==0){
+				fprintf(f, "MOV AX, %s\n",quad[i].op1);
+				fprintf(f, "MOV BX, %s\n",quad[i].op2);
+				fprintf(f, "AND AX, BX\n");
+				fprintf(f, "MOV %s, AX\n",quad[i].res);
+	}else   if((strcmp(quad[i].oper, "or"))==0){
+				fprintf(f, "MOV AX, %s\n",quad[i].op1);
+				fprintf(f, "MOV BX, %s\n",quad[i].op2);
+				fprintf(f, "OR AX, BX\n");
+				fprintf(f, "MOV %s, AX\n",quad[i].res);
     }else   if((strcmp(quad[i].oper, "BR"))==0){
                 switch(type_branchement){
                     case 0: {
