@@ -4,10 +4,12 @@
 	#include "syntax.tab.h"
 	#include "symbol_table.h"
 	extern YYSTYPE yylval;
+  extern int isIdf(char* str);
 	void insert(char* idf);
 	void printList();
 	int indexOfChar(char alphabet);
-	int num_ligne=1;
+  int isIdf(char *str);
+  int num_ligne=1;
 	Symbol* symbolsTable[26];
 	Symbol* find(char *idf);
 	char tempType = ' ';
@@ -236,13 +238,22 @@ char typeOf(char* val) {
 }
 
 int isCompatible(char* idf1, char* idf2) {
-  char type1 = typeOf(idf1);
-  char type2 = typeOf(idf2);
+  char type1;
+  char type2;
+  if(isIdf(idf1))
+    type1 = getType(idf1);
+  else
+    type1 = typeOf(idf1);
+
+  if (isIdf(idf2))
+    type2 = getType(idf2);
+  else
+    type2 = typeOf(idf2);
 
   if(type1 == type2)
     return 1;
-  else if (type1 == 'n' && type2 == 'i' || type1 == 'i' && type2 == 'n')
-    return 2;
+  // else if (type1 == 'n' && type2 == 'i' || type1 == 'i' && type2 == 'n')
+  //   return 2;
   return 0;
 }
 
@@ -265,9 +276,3 @@ int setArraySize(char* idf, int size) {
 int indexOfChar(char alphabet) {
   return (int)(alphabet - 'A');
 }
-
-
-
-
-
-

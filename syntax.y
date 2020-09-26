@@ -21,31 +21,33 @@
 	extern char tempType;
 	extern char getType(char* idf);
   extern int infixToPostfix(char* res, char* exp);
+  extern int isCompatible(char *idf1, char *idf2);
   int postfixToQuadruple(char *exp);
-	void yyerror(char *msg);
-	void updateEntityType(char* idf, char type);
-	void updateEntitySize(char *idf, int size);
-	qdr quad[1000];
-	int qc=1;
-	int sauv_BZ_if;
-	int sauv_BR_if[20];
-	int sauv_BR_if_indice = 0;
-	char sauv_BR_while[20][20];
-	int sauv_BR_while_indice = 0;
-	int sauv_bz_while[20];
-	int sauv_bz_while_indice = 0;
-	char sauv_BR_for[20][20];
-	int sauv_BR_for_indice = 0;
-	int sauv_bz_for[20];
-	int sauv_bz_for_indice = 0;
-	char qc_char[20];
-	void quadr(char opr[],char op1[],char op2[],char res[]);
-	void ajout_quad(int num_quad, int colon_quad, char val []);
-	void afficher_qdr();
-	void generation_code_machine();
+  void yyerror(char *msg);
+  void updateEntityType(char *idf, char type);
+  void updateEntitySize(char *idf, int size);
+  qdr quad[1000];
+  int qc = 1;
+  int sauv_BZ_if;
+  int sauv_BR_if[20];
+  int sauv_BR_if_indice = 0;
+  char sauv_BR_while[20][20];
+  int sauv_BR_while_indice = 0;
+  int sauv_bz_while[20];
+  int sauv_bz_while_indice = 0;
+  char sauv_BR_for[20][20];
+  int sauv_BR_for_indice = 0;
+  int sauv_bz_for[20];
+  int sauv_bz_for_indice = 0;
+  char qc_char[20];
+  void quadr(char opr[], char op1[], char op2[], char res[]);
+  void ajout_quad(int num_quad, int colon_quad, char val[]);
+  void afficher_qdr();
+  void generation_code_machine();
   char postfixExp[200];
   char idf_final_value[100];
   int temp_indice = 0;
+  char msg[200];
 %}
 %union{
 	int entier;
@@ -103,7 +105,6 @@ nouvelle_ligne : num_ligne_token {numero_ligne++;}
 ;
 
 affectation : idf variableType equal operation_arithmetique_logique {
-  printf("[%d] Operation : %s\n",numero_ligne, $4);
 	char typeIdf = getType($1);
 	if(typeIdf == ' ') {
 		quadr("Dec", $1, "", "");
@@ -115,10 +116,11 @@ affectation : idf variableType equal operation_arithmetique_logique {
 		sprintf(size, "@%d", $2);
 		strcat(idf_array, size);
 	}
-	quadr(":=", strdup(idf_final_value), "", idf_array);
+  if(getType(idf_array)!=' ' && idf_final_value[0]!='t' && isCompatible(idf_array, idf_final_value) == 0)
+    printf("Type de variable incompatible avec la valeur %s %s\n", idf_array, idf_final_value);
+  quadr(":=", strdup(idf_final_value), "", idf_array);
 }
 | type idf variableType equal operation_arithmetique_logique {
-  printf("[%d] Operation : %s\n", numero_ligne, $5);
   char typeIdf = getType($2);
   if (typeIdf == ' ') {
     quadr("Dec", $2, "", "");
@@ -352,13 +354,17 @@ operation_logique:  operation_comparaison and_or operation_logique {
 ;
 
 incrementation_decrementation : idf variableType arit_operator equal integer {
+  if (strcmp($3, "+") != 0 && strcmp($3, "-") != 0)
+    yyerror("Operateur arithmetique errone.");
+  if ($5 <= 0)
+    yyerror("La valeur doit etre de type integer positif.");
 
-	char idf_array[strlen($1)];
-	strcpy(idf_array, $1);
-	if($2 != 0){
-		char size[10];
-		sprintf(size, "@%d", $2);
-		strcat(idf_array, size);
+  char idf_array[strlen($1)];
+  strcpy(idf_array, $1);
+  if ($2 != 0) {
+    char size[10];
+    sprintf(size, "@%d", $2);
+    strcat(idf_array, size);
 	}
 
 
@@ -376,7 +382,6 @@ sauv_BR_while_indice++;
 operation_logique par_ferm 
 {
 	postfixExp[0] = '\0';
-  printf("[%d] Operation : %s\n", numero_ligne, $4);
 	infixToPostfix(postfixExp, $4);
 	postfixToQuadruple(postfixExp);
 	if(postfixToQuadruple(postfixExp)!=1)
@@ -422,7 +427,6 @@ aco_ouvr S aco_ferm
 if_instruction : if_token par_ouvr operation_logique par_ferm 
 {
 	postfixExp[0] = '\0';
-  printf("[%d] Operation : %s\n", numero_ligne, $3);
   infixToPostfix(postfixExp, $3);
 	postfixToQuadruple(postfixExp);
 	if(postfixToQuadruple(postfixExp)!=1)
@@ -570,13 +574,7 @@ int label(int num){
 }
 
 int isIdf(char* str){
-    if(str[0] == 'A' || str[0] == 'B' || str[0] == 'C' || str[0] == 'D' ||
-       str[0] == 'E' || str[0] == 'F' || str[0] == 'G' || str[0] == 'H' ||
-       str[0] == 'I' || str[0] == 'J' || str[0] == 'K' || str[0] == 'L' ||
-       str[0] == 'M' || str[0] == 'N' || str[0] == 'O' || str[0] == 'P' ||
-       str[0] == 'Q' || str[0] == 'R' || str[0] == 'S' || str[0] == 'T' ||
-       str[0] == 'U' || str[0] == 'V' || str[0] == 'W' || str[0] == 'X' ||
-       str[0] == 'Y' || str[0] == 'Z')
+    if(str[0] >= 'A' && str[0] <= 'Z')
         return 1;
     return 0;
 }
@@ -604,10 +602,36 @@ int postfixToQuadruple(char *exp) {
             char* opr = token;
             char* op1 = depiler(pile);
             char* op2 = depiler(pile);
+
+            if(isIdf(op1))
+              if(find(op1) == NULL) {
+                sprintf(msg, "%s non declaree.", op1);
+                yyerror(msg);
+              }
+            if (isIdf(op2))
+              if (find(op2) == NULL) {
+                sprintf(msg, "%s non declaree.", op2);
+                yyerror(msg);
+              }
+
+            if (isIdf(op1) && getType(op1) == ' ') {
+              sprintf(msg, "%s non initialise.", op1);
+              yyerror(msg);
+            }
+            if (isIdf(op2) && getType(op2) == ' ') {
+              sprintf(msg, "%s non initialise.", op2);
+              yyerror(msg);
+            }
+
+            if (op1[0]!='t' && op2[0]!='t' && isCompatible(op1, op2) == 0) {
+              sprintf(msg, "Type de %s et %s incompatible.", op1, op2);
+              yyerror(msg);
+            }
+
             char str_j[10];
             char str_qc[10];
             sprintf(str_j,"%d", j);
-            char temp[3] = "T";
+            char temp[3] = "t";
             strcat(temp, str_j);
 			if(j>temp_indice){
 				quadr("Dec", temp, "", "");
