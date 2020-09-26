@@ -19,21 +19,12 @@
 	extern void insert(char *idf, char *code);
 	extern char typeOf(char *val);
 	extern char tempType;
-	extern char* getVal(char* idf);
 	extern char getType(char* idf);
   extern int infixToPostfix(char* res, char* exp);
   int postfixToQuadruple(char *exp);
-	void setVal(char idf[], char* val);
 	void yyerror(char *msg);
-	void updateEntityVal(char* idf, char* val);
 	void updateEntityType(char* idf, char type);
 	void updateEntitySize(char *idf, int size);
-	void calculate(char* resultChar, char* idf1, char* idf2, char op);
-	int calculateInt(int a, int b, char operator);
-	float calculateFloat(float a, float b, char operator);
-	int calculateLogic(int a, int b, char *and_or);
-	int calculateCond(char *a, char *b, char *op);
-	void incrementation_decrementation(char* idf, char arit_op, int entier);
 	qdr quad[1000];
 	int qc=1;
 	int sauv_BZ_if;
@@ -52,7 +43,6 @@
 	void ajout_quad(int num_quad, int colon_quad, char val []);
 	void afficher_qdr();
 	void generation_code_machine();
-  char operation[200];
   char postfixExp[200];
   char idf_final_value[100];
   int temp_indice = 0;
@@ -61,7 +51,7 @@
 	int entier;
 	float decimal;
 	char charactere;
-	char str[20];
+	char str[200];
 }
 %token <str> type
 %token <str> par_ouvr
@@ -77,7 +67,7 @@
 %token <entier> logical
 %token <str> index_idf
 %token <str> equal;
-%token <charactere> arit_operator
+%token <str> arit_operator
 %token <str> cond_operator
 %token <str> and_or
 %token <entier> taille
@@ -91,8 +81,8 @@
 %type <str> affectation
 %type <str> operation_arithmetique_logique
 %type <str> operation_arithmetique
-%type <entier> operation_logique
-%type <entier> operation_comparaison
+%type <str> operation_logique
+%type <str> operation_comparaison
 %type <entier> variableType
 %type <str> expression_A
 %type <str> loop
@@ -112,7 +102,8 @@ nouvelle_ligne : num_ligne_token {numero_ligne++;}
 |
 ;
 
-affectation : idf variableType equal {operation[0]='\0';} operation_arithmetique_logique {
+affectation : idf variableType equal operation_arithmetique_logique {
+  printf("[%d] Operation : %s\n",numero_ligne, $4);
 	char typeIdf = getType($1);
 	if(typeIdf == ' ') {
 		quadr("Dec", $1, "", "");
@@ -124,14 +115,14 @@ affectation : idf variableType equal {operation[0]='\0';} operation_arithmetique
 		sprintf(size, "@%d", $2);
 		strcat(idf_array, size);
 	}
-	updateEntityVal(idf_array, $5);
 	quadr(":=", strdup(idf_final_value), "", idf_array);
 }
-| type idf variableType equal {operation[0]='\0';} operation_arithmetique_logique {
-	char typeIdf = getType($2);
-	if(typeIdf == ' ') {
-		quadr("Dec", $2, "", "");
-	}
+| type idf variableType equal operation_arithmetique_logique {
+  printf("[%d] Operation : %s\n", numero_ligne, $5);
+  char typeIdf = getType($2);
+  if (typeIdf == ' ') {
+    quadr("Dec", $2, "", "");
+  }
   char idf_array[strlen($2)];
   strcpy(idf_array, $2);
   if ($3 != 0) {
@@ -140,7 +131,6 @@ affectation : idf variableType equal {operation[0]='\0';} operation_arithmetique
     strcat(idf_array, size);
 	}
 	
-	updateEntityVal(idf_array, $6);
 	printf("\n%s, %s\n", $2,idf_final_value);
 	quadr(":=", strdup(idf_final_value), "", idf_array);
 }
@@ -153,18 +143,15 @@ affectation : idf variableType equal {operation[0]='\0';} operation_arithmetique
     strcat(idf_array, size);
 	}
 	
-	if($7==1){
-		updateEntityVal(idf_array, $9);
+	if(strcmp($7, "TRUE")==0){
 		quadr(":=", strdup(idf_final_value), "", idf_array);
 	}else{
-		updateEntityVal(idf_array, $11);
 		quadr(":=", strdup(idf_final_value), "", idf_array);
 	}
 	
 }
-| type idf variableType equal if_token else_token par_ouvr {operation[0]='\0';} operation_logique virgule {operation[0]='\0';} operation_arithmetique_logique virgule {operation[0]='\0';} operation_arithmetique_logique par_ferm{
+| type idf variableType equal if_token else_token par_ouvr operation_logique virgule operation_arithmetique_logique virgule operation_arithmetique_logique par_ferm{
 	
-  printf("%d Operation : %s\n", numero_ligne, operation);
   char idf_array[strlen($2)];
   strcpy(idf_array, $2);
   if ($3 != 0) {
@@ -173,11 +160,9 @@ affectation : idf variableType equal {operation[0]='\0';} operation_arithmetique
     strcat(idf_array, size);
 	}
 	
-	if($9==1){
-		updateEntityVal(idf_array, $12);
+	if(strcmp($8, "TRUE")==0){
 		quadr(":=", strdup(idf_final_value), "", idf_array);
 	}else{
-		updateEntityVal(idf_array, $15);
 		quadr(":=", strdup(idf_final_value), "", idf_array);
 	}
 }
@@ -245,53 +230,54 @@ variableType: taille {$$ = $1;}
 
 operation_arithmetique_logique : operation_arithmetique {
   postfixExp[0] = '\0';
-  infixToPostfix(postfixExp, operation);
+  infixToPostfix(postfixExp, $1);
   
   if(postfixToQuadruple(postfixExp)!=1)
 		strcpy(idf_final_value, quad[qc-1].res);
-  //strcpy($$, quad[qc-1].res);
-  }
+  strcpy($$, $1);
+}
 | operation_logique {
   postfixExp[0] = '\0';
-  infixToPostfix(postfixExp, operation);
+  infixToPostfix(postfixExp, $1);
   postfixToQuadruple(postfixExp);
   if(postfixToQuadruple(postfixExp)!=1)
 		strcpy(idf_final_value, quad[qc-1].res);
-  /* strcpy($$, quad[qc].op1); */
-  if ($1 == 1)
-    strcpy($$, "TRUE");
-  else
-    strcpy($$, "FALSE");
+  strcpy($$, $1);
  }
 ;
 
-operation_arithmetique: expression_A {strcat(operation, " ");strcpy($$, $1);}
-| expression_A {
-  strcat(operation, " ");
+operation_arithmetique: expression_A {strcpy($$, $1);}
+| expression_A arit_operator operation_arithmetique {
+  char tempExp[200];
+  tempExp[0] = '\0';
+  strcat(tempExp, $1);
+  strcat(tempExp, " ");
+  strcat(tempExp, $2);
+  strcat(tempExp, " ");
+  strcat(tempExp, $3);
+  strcpy($$, tempExp);
 }
-arit_operator {
-  char temp[2];
-  temp[0] = $3;
-  temp[1] = ' ';
-  strcat(operation, temp);
-} operation_arithmetique {
-  calculate($$, $1, $5, $3);
+| par_ouvr operation_arithmetique par_ferm {
+  char tempExp[200];
+  tempExp[0] = '\0';
+  strcat(tempExp, "(");
+  strcat(tempExp, " ");
+  strcat(tempExp, $2);
+  strcat(tempExp, " ");
+  strcat(tempExp, ")");
+  strcpy($$, tempExp);
 }
-| par_ouvr {strcat(operation, "( ");} operation_arithmetique par_ferm {strcat(operation, ") ");strcpy($$, $3);}
 ;
 
 expression_A : integer {
   snprintf($$, 20, "%d", $1);
-  strcat(operation, $$);
 }
 | numeric {
   snprintf($$, 20, "%f", $1);
-  strcat(operation, $$);
 }
 | character {
   $$[0] = $1;
   $$[1] = '\0';
-  strcat(operation, $$);
 }
 | idf variableType{
 
@@ -302,51 +288,66 @@ expression_A : integer {
 		sprintf(size, "@%d", $2);
 		strcat(idf_array, size);
 	}
-	strcat(operation, idf_array);
-	strcpy($$, getVal(idf_array));
-	}
-// | par_ouvr expression_A par_ferm {strcpy($$, $2);}
+  strcpy($$, idf_array);
+}
 ;
 
-operation_comparaison : par_ouvr operation_arithmetique cond_operator {
-  strcat(operation, $3);
-  strcat(operation, " ");
+operation_comparaison : par_ouvr operation_arithmetique cond_operator operation_arithmetique par_ferm {
+  char tempExp[200];
+  tempExp[0] = '\0';
+  strcat(tempExp, "(");
+  strcat(tempExp, " ");
+  strcat(tempExp, $2);
+  strcat(tempExp, " ");
+  strcat(tempExp, $3);
+  strcat(tempExp, " ");
+  strcat(tempExp, $4);
+  strcat(tempExp, " ");
+  strcat(tempExp, ")");
+  strcpy($$, tempExp);
 }
-operation_arithmetique par_ferm {
-  $$ = calculateCond($2, $5, $3);
-}
-| operation_arithmetique cond_operator {
-  strcat(operation, $2);
-  strcat(operation, " ");
-}
-operation_arithmetique {
-  $$ = calculateCond($1, $4, $2);
+| operation_arithmetique cond_operator operation_arithmetique {
+  char tempExp[200];
+  tempExp[0] = '\0';
+  strcat(tempExp, $1);
+  strcat(tempExp, " ");
+  strcat(tempExp, $2);
+  strcat(tempExp, " ");
+  strcat(tempExp, $3);
+  strcpy($$, tempExp);
 };
 
-operation_logique:  operation_comparaison and_or {
-  strcat(operation, $2);
-  strcat(operation, " ");
-} operation_logique {$$ = calculateLogic($1, $4, $2);}
-|	operation_comparaison {$$ = $1;}
+operation_logique:  operation_comparaison and_or operation_logique {
+  char tempExp[200];
+  tempExp[0] = '\0';
+  strcat(tempExp, $1);
+  strcat(tempExp, " ");
+  strcat(tempExp, $2);
+  strcat(tempExp, " ");
+  strcat(tempExp, $3);
+  strcpy($$, tempExp);
+}
+| operation_comparaison {
+  strcpy($$, $1);
+}
+| logical and_or operation_logique {
+  char tempExp[200];
+  tempExp[0] = '\0';
+  if ($1 == 1)
+    strcat(tempExp, "TRUE");
+  else
+    strcat(tempExp, "FALSE");
+  strcat(tempExp, " ");
+  strcat(tempExp, $2);
+  strcat(tempExp, " ");
+  strcat(tempExp, $3);
+  strcpy($$, tempExp);
+}
 | logical {
   if ($1 == 1)
-    strcat(operation, "TRUE");
+    strcpy($$, "TRUE");
   else
-    strcat(operation, "FALSE");
-  strcat(operation, " ");
-}
-and_or {
-  strcat(operation, $3);
-  strcat(operation, " ");
-}
-operation_logique { $$ = calculateLogic($1, $5, $3); }
-| logical {
-  if ($1 == 1)
-    strcat(operation, "TRUE");
-  else
-    strcat(operation, "FALSE");
-  strcat(operation, " ");
-  $$ = $1;
+    strcpy($$, "FALSE");
 }
 ;
 
@@ -361,23 +362,22 @@ incrementation_decrementation : idf variableType arit_operator equal integer {
 	}
 
 
- incrementation_decrementation(idf_array, $3, $5);
  char integer_str[20];
  sprintf(integer_str, "%d", $5);
- if($3 == '+') quadr("+", idf_array, integer_str, idf_array);
+ if($3 == "+") quadr("+", idf_array, integer_str, idf_array);
  else quadr("-", idf_array, integer_str, idf_array);
 };
 
 loop : while_kw par_ouvr 
 {
-operation[0]='\0'; 
 sprintf(sauv_BR_while[sauv_BR_while_indice], "%d", qc);
 sauv_BR_while_indice++;
 } 
 operation_logique par_ferm 
 {
 	postfixExp[0] = '\0';
-	infixToPostfix(postfixExp, operation);
+  printf("[%d] Operation : %s\n", numero_ligne, $4);
+	infixToPostfix(postfixExp, $4);
 	postfixToQuadruple(postfixExp);
 	if(postfixToQuadruple(postfixExp)!=1)
 	strcpy(idf_final_value, quad[qc-1].res);
@@ -419,10 +419,11 @@ aco_ouvr S aco_ferm
 }
 ;
 
-if_instruction : if_token par_ouvr {operation[0]='\0';} operation_logique par_ferm 
+if_instruction : if_token par_ouvr operation_logique par_ferm 
 {
 	postfixExp[0] = '\0';
-	infixToPostfix(postfixExp, operation);
+  printf("[%d] Operation : %s\n", numero_ligne, $3);
+  infixToPostfix(postfixExp, $3);
 	postfixToQuadruple(postfixExp);
 	if(postfixToQuadruple(postfixExp)!=1)
 		strcpy(idf_final_value, quad[qc-1].res);
@@ -467,24 +468,6 @@ ELSE : else_token
 }
 
 %%
-void updateEntityVal(char* idf, char* val) {
-  char typeVal = typeOf(val);
-  Symbol *var = find(idf);
-  if (var == NULL) {
-    insert(idf, val);
-    var->entityType = typeVal;
-  }
-  else {
-    if (typeVal == var->entityType)
-      strcpy(var->entityCode, val);
-    else if (var->entityType == ' ') {
-      var->entityType = typeVal;
-      strcpy(var->entityCode, val);
-    }
-    else
-      yyerror("Type de variable incompatible avec la valeur\n");
-  }
-}
 void updateEntityType(char *idf, char type) {
   Symbol *var = find(idf);
   if (var == NULL) {
@@ -508,141 +491,6 @@ void updateEntitySize(char *idf, int size) {
     else
       yyerror("Le tableau a deja une taille attribuee.\n");
   }
-}
-void calculate(char* resultChar, char* a, char* b, char op) {
-  float val1, val2;
-  char type1, type2;
-  if(a[0] >= 'A' && a[0] <= 'Z') {
-    Symbol *var1 = find(a);
-    val1 = (float) atof(a);
-    type1 = var1->entityType;
-  }
-  else {
-    if (typeOf(a) == 'n') {
-      val1 = atof(a);
-      type1 = 'n';
-    }
-    else if(typeOf(a) == 'i') {
-      val1 = (float) atoi(a);
-      type1 = 'i';
-    }
-  }
-  if (b[0] >= 'A' && b[0] <= 'Z') {
-    Symbol *var1 = find(b);
-    val2 = (float)atof(b);
-    type2 = var1->entityType;
-  } else {
-    if (typeOf(b) == 'n') {
-      val2 = atof(b);
-      type2 = 'n';
-    } else if (typeOf(b) == 'i') {
-      val2 = (float)atoi(b);
-      type2 = 'i';
-    }
-  }
-
-  if (type1 == type2) {
-      if (type1 == 'i') {
-        int result;
-        result = calculateInt((int)val1, (int)val2, op);
-        snprintf(resultChar, 20, "%d", result);
-      } else if (type2 == 'n') {
-        float result;
-        result = calculateFloat(val1, val2, op);
-        snprintf(resultChar, 20, "%f", result);
-      }
-  }
-  else
-    printf("Types differents\n");
-  //   NEED TO IMPLEMENT FLOAT INT OPERATIONS
-}
-int calculateInt(int a, int b, char operator) {
-  if(operator == '+')
-    return a+b;
-  else if(operator == '-')
-    return a-b;
-  else if (operator== '*')
-    return a*b;
-  else if (operator== '/')
-    return a/b;
-  else
-    return a%b;
-}
-float calculateFloat(float a, float b, char operator) {
-  if (operator== '+')
-    return a + b;
-  else if (operator== '-')
-    return a - b;
-  else if (operator== '*')
-    return a * b;
-  else if (operator== '/')
-    return a / b;
-}
-int calculateLogic(int a, int b, char* and_or) {
-  if (and_or[0] == 'a')
-    return a && b;
-  return a || b;
-}
-int calculateCond(char *a, char *b, char *op) {
-  if (typeOf(a) == 'i') {
-    int val1 = atoi(a);
-    int val2 = atoi(b);
-    if (strcmp(op, "==") == 0)
-      return val1 == val2;
-    else if (strcmp(op, "!=") == 0)
-      return val1 != val2;
-    else if (strcmp(op, ">=") == 0)
-      return val1 >= val2;
-    else if (strcmp(op, "<=") == 0)
-      return val1 <= val2;
-    else if (strcmp(op, ">") == 0)
-      return val1 > val2;
-    else if (strcmp(op, "<") == 0)
-      return val1 < val2;
-  } else if (typeOf(a) == 'n') {
-    float val1 = atof(a);
-    float val2 = atof(b);
-    if (strcmp(op, "==") == 0)
-      return val1 == val2;
-    else if (strcmp(op, "!=") == 0)
-      return val1 != val2;
-    else if (strcmp(op, ">=") == 0)
-      return val1 >= val2;
-    else if (strcmp(op, "<=") == 0)
-      return val1 <= val2;
-    else if (strcmp(op, ">") == 0)
-      return val1 > val2;
-    else if (strcmp(op, "<") == 0)
-      return val1 < val2;
-  }
-}
-
-void incrementation_decrementation(char* idf, char arit_op, int entier){
- 	if(arit_op != '+' && arit_op != '-')
-		yyerror("Operateur arithmetique errone.");
-	if(entier <= 0)
-		yyerror("La valeur doit etre de type integer positif.");
-		
-	char typeIdf = getType(idf);
-	if(typeIdf == 'n' || typeIdf == 'i'){
-		if(arit_op == '-') entier = -entier;
-		char* idfValue = getVal(idf);
-		char result[12];
-		if(typeIdf == 'n'){
-			float i1 = atof(idfValue);
-			i1 += entier;
-			sprintf(result, "%f", i1);
-			setVal(idf, result);
-		}else{
-			int i2 = atoi(idfValue);
-			i2 += entier;
-			sprintf(result, "%d", i2);
-			printf("%s", result);
-			setVal(idf, result);
-		}
-	}else 
-		if(typeIdf == ' ') yyerror("Variable non initialise.");
-			else yyerror("Type incompatible.");
 }
 
 int main(int argc, char** argv){
@@ -771,7 +619,7 @@ int postfixToQuadruple(char *exp) {
         }
         token = strtok(NULL, " ");
     }
-	if(i==1)
+	if(i>=1)
 		strcpy(idf_final_value, strdup(depiler(pile)));
     return i;
 }

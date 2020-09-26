@@ -4,7 +4,7 @@
 	#include "syntax.tab.h"
 	#include "symbol_table.h"
 	extern YYSTYPE yylval;
-	void insert(char* idf, char* code);
+	void insert(char* idf);
 	void printList();
 	int indexOfChar(char alphabet);
 	int num_ligne=1;
@@ -25,7 +25,7 @@ taille "["[1-9][0-9]*"]"
 {idf} {
   if(yyleng<=10){
     strcpy(yylval.str, yytext);
-    insert(yytext, "");
+    insert(yytext);
     return idf;
   } else
       printf("erreur lexical : idf trop long\n");
@@ -71,7 +71,7 @@ taille "["[1-9][0-9]*"]"
   return cond_operator;
 };
 {arit_operator} {
-  yylval.charactere = yytext[0];
+  strcpy(yylval.str, yytext);
   return arit_operator;
 };
 "<-" {
@@ -156,14 +156,13 @@ void printList() {
 }
 
 //insert link at the first location
-void insert(char idf[], char code[]) {
+void insert(char idf[]) {
   if (find(idf) != NULL)
     return;
   // create a link
   Symbol *newVar = (Symbol *)malloc(sizeof(Symbol));
 
   strcpy(newVar->entityName, idf);
-  strcpy(newVar->entityCode, code);
   newVar->entityType = ' ';
   newVar->arraySize = 0;
 
@@ -199,21 +198,6 @@ Symbol* find(char* idf) {
 
   // if data found, return the current Link
   return current;
-}
-
-char* getVal(char* idf) {
-  Symbol* var = find(idf);
-  if(var != NULL) {
-    return var->entityCode;
-  }
-  return " ";
-}
-
-void setVal(char idf[], char* val) {
-  Symbol* var = find(idf);
-  if(var != NULL) {
-  strcpy(var->entityCode, val);
-  }
 }
 
 char getType(char* idf) {
