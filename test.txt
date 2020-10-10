@@ -5,8 +5,8 @@ WHILE((Idf1 < 5+2) or (1>1)) {
 	Idf1 <- 5+2
 }
 
-
-FOR(i IN 1:10) {
+INTEGER I
+FOR(I IN 1:10) {
 	Idf1 <- 5+2
 }
 

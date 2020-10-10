@@ -84,10 +84,6 @@ taille "["[1-9][0-9]*"]"
   strcpy(yylval.str, yytext);
   return and_or;
 };
-[a-z]+ {
-  strcpy(yylval.str, yytext);
-  return index_idf;
-}
 {type_kw} {
   strcpy(yylval.str, yytext);
   tempType2 = yytext[0] + 32;

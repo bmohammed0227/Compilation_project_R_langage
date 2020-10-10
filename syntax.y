@@ -399,7 +399,7 @@ aco_ouvr S aco_ferm
 	ajout_quad(sauv_bz_while[sauv_bz_while_indice-1], 3, qc_char);
 	sauv_bz_while_indice--;
 }
-| for_kw par_ouvr index_idf in_kw integer range integer par_ferm 
+| for_kw par_ouvr idf in_kw integer range integer par_ferm 
 {
 	sprintf(sauv_BR_for[sauv_BR_for_indice], "%d", qc+1);
 	sauv_BR_for_indice++;
@@ -566,7 +566,7 @@ int label(int num){
     char str_num[10];
     sprintf(str_num, "%d", num);
     for(int i=1; i<=qc; i++){
-        if (strcmp(quad[i].oper, "BR")==0 && strcmp(quad[i].res, str_num)==0){
+        if ((strcmp(quad[i].oper, "BR")==0 || strcmp(quad[i].oper, "BZ")==0) && strcmp(quad[i].res, str_num)==0){
             return 1;
         }
     }
@@ -574,7 +574,7 @@ int label(int num){
 }
 
 int isIdf(char* str){
-    if(str[0] >= 'A' && str[0] <= 'Z')
+    if(str[0] >= 'A' && str[0] <= 'Z' || str[0]=='t')
         return 1;
     return 0;
 }
@@ -603,30 +603,6 @@ int postfixToQuadruple(char *exp) {
             char* op1 = depiler(pile);
             char* op2 = depiler(pile);
 
-            if(isIdf(op1))
-              if(find(op1) == NULL) {
-                sprintf(msg, "%s non declaree.", op1);
-                yyerror(msg);
-              }
-            if (isIdf(op2))
-              if (find(op2) == NULL) {
-                sprintf(msg, "%s non declaree.", op2);
-                yyerror(msg);
-              }
-
-            if (isIdf(op1) && getType(op1) == ' ') {
-              sprintf(msg, "%s non initialise.", op1);
-              yyerror(msg);
-            }
-            if (isIdf(op2) && getType(op2) == ' ') {
-              sprintf(msg, "%s non initialise.", op2);
-              yyerror(msg);
-            }
-
-            if (op1[0]!='t' && op2[0]!='t' && isCompatible(op1, op2) == 0) {
-              sprintf(msg, "Type de %s et %s incompatible.", op1, op2);
-              yyerror(msg);
-            }
 
             char str_j[10];
             char str_qc[10];
@@ -655,6 +631,7 @@ void generation_code_machine(){
     fprintf(f, "CODE segment\n");
     fprintf(f, "MAIN:\n");
     fprintf(f, "ASSUME CS:CODE, DS:DATA, SS:Pile\n");
+	fprintf(f, "Cond DW ? \n");
     for(int i=1; i<=qc; i++){
 	//fprintf(f, "\n\n%d\n", i);
     if(label(i)==1){
@@ -674,26 +651,32 @@ void generation_code_machine(){
                 type_branchement = 4;
                 fprintf(f,"MOV AX, %s\n",quad[i].op1);
                 fprintf(f,"CMP AX, %s\n",quad[i].op2);
+				fprintf(f,"MOV Cond, AX\n");
     }else   if((strcmp(quad[i].oper, "<"))==0){
                 type_branchement = 3;
                 fprintf(f,"MOV AX, %s\n",quad[i].op1);
                 fprintf(f,"CMP AX, %s\n",quad[i].op2);
+				fprintf(f,"MOV Cond, AX\n");
     }else   if((strcmp(quad[i].oper, "=="))==0){
                 type_branchement = 5;
                 fprintf(f,"MOV AX, %s\n",quad[i].op1);
                 fprintf(f,"CMP AX, %s\n",quad[i].op2);
+				fprintf(f,"MOV Cond, AX\n");
     }else   if((strcmp(quad[i].oper, ">="))==0){
                 type_branchement = 1;
                 fprintf(f,"MOV AX, %s\n",quad[i].op1);
                 fprintf(f,"CMP AX, %s\n",quad[i].op2);
+				fprintf(f,"MOV Cond, AX\n");
     }else   if((strcmp(quad[i].oper, "<="))==0){
                 type_branchement = 0;
                 fprintf(f,"MOV AX, %s\n",quad[i].op1);
                 fprintf(f,"CMP AX, %s\n",quad[i].op2);
+				fprintf(f,"MOV Cond, AX\n");
     }else   if((strcmp(quad[i].oper, "!="))==0){
                 type_branchement = 2;
                 fprintf(f,"MOV AX, %s\n",quad[i].op1);
                 fprintf(f,"CMP AX, %s\n",quad[i].op2);
+				fprintf(f,"MOV Cond, AX\n");
     }else   if((strcmp(quad[i].oper, "+"))==0){
                 fprintf(f, "MOV AX, %s\n",quad[i].op1);
                 fprintf(f, "ADD AX, %s\n",quad[i].op2);
