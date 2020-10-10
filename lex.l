@@ -146,7 +146,7 @@ void printList() {
     Symbol *var = symbolsTable[i];
 
     while (var != NULL) {
-      printf("\t|%10s |%12s  |%14c | %12d\n", var->entityName,
+      printf("\t|%10s |%19c | %12d\n", var->entityName,
              var->entityType, var->arraySize);
       var = var ->next;
     }

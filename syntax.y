@@ -508,7 +508,7 @@ int main(int argc, char** argv){
 	}
 	yyin = file;
     yyparse();
-    /* printList(); */
+    printList();
 	afficher_qdr();
 	generation_code_machine();
 	return 0;
@@ -593,7 +593,6 @@ int postfixToQuadruple(char *exp) {
     int j = 1;
 	int i = 0;
     while(token != NULL){
-		printf("t => %d, temp_ind => %d\n", j, temp_indice);
         if(opr(token)==1){
 			empiler(pile, token);
 			i++;
